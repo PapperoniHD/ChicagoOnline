@@ -7,8 +7,9 @@ using UnityEngine;
 
 public class PlayerUI : NetworkBehaviour
 {
-    [SerializeField] private TextMeshProUGUI currentTurnText;
+    public Camera playerCamera;
 
+    [SerializeField] private TextMeshProUGUI currentTurnText;
     [SerializeField] private TextMeshProUGUI explosiveText;
 
     [SerializeField] private GameObject canvas;
@@ -17,6 +18,9 @@ public class PlayerUI : NetworkBehaviour
 
     [SerializeField]
     private List<ScoreScript> scoreList;
+
+    public RectTransform[] seatContainers;
+
     void Start()
     {
         if (IsOwner)
@@ -26,6 +30,7 @@ public class PlayerUI : NetworkBehaviour
         else
         {
             canvas.gameObject.SetActive(false);
+            playerCamera.enabled = false;
         }
         
     }
@@ -42,6 +47,19 @@ public class PlayerUI : NetworkBehaviour
         explosiveText.GetComponent<Animator>().Play("Explode", -1, 0f);
     }
 
+    [Rpc(SendTo.Owner)]
+    public void AnnouncementTextRpc(string text)
+    {
+        explosiveText.SetText(text);
+        explosiveText.GetComponent<Animator>().Play("ShowText", -1, 0f);
+    }
+
+    [Rpc(SendTo.Owner)]
+    public void HideTextRpc()
+    {
+        explosiveText.GetComponent<Animator>().Play("HideText", -1, 0f);
+    }
+
     [Rpc(SendTo.ClientsAndHost)]
     public void AddPlayerScoreObjectClientRpc(ulong playerNetworkObjectId, int playerIndex)
     {
@@ -55,7 +73,7 @@ public class PlayerUI : NetworkBehaviour
                 GameObject scoreObj = Instantiate(playerScorePrefab, scoreboard);
                 ScoreScript score = scoreObj.GetComponent<ScoreScript>();
 
-                score.InitializeScore(playerScript, playerIndex);
+                //score.InitializeScore(playerScript, playerIndex);
 
                 scoreList.Add(score);
             }

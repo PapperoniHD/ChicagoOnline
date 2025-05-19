@@ -23,6 +23,14 @@ public class CardDeck : NetworkBehaviour
 
         instance = this;
 
+        InitializeDeck();
+    }
+
+    public void InitializeDeck()
+    {
+        Cards.Clear();
+        CachedThrownCards.Clear();
+
         for (int i = 1; i < 14; i++)
         {
             foreach (Suit suit in (Suit[])Enum.GetValues(typeof(Suit)))
@@ -34,6 +42,8 @@ public class CardDeck : NetworkBehaviour
                 Cards.Add(card);
             }
         }
+
+        Cards.Shuffle();
     }
 
     //Returns and removes a random card from the deck

@@ -146,7 +146,7 @@ public class PlayerScript : NetworkBehaviour
 
         rectTransform.position = cardPos.position;
 
-        cardUI.GetComponent<RawImage>().texture = Resources.Load<Texture2D>("Playing Cards/Image/PlayingCards/" + card.FileName());
+        cardUI.GetComponent<RawImage>().texture = Resources.Load<Texture2D>("MyCards/Cards/" + card.FileName());
         cardUI.GetComponent<CardUI>().playerScript = this;
         cardUI.GetComponent<CardUI>().cardIndex = index;
 
