@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -59,10 +60,48 @@ public class CardDeck : NetworkBehaviour
         Card randomCard = Cards[randomNum];
 
         //Cards.RemoveAt(randomNum);
-        RemoveCardFromDeckServerRpc(randomNum);
+        //RemoveCardFromDeckServerRpc(randomNum);
+        if (randomNum >= 0 && randomNum < Cards.Count)
+        {
+            Cards.RemoveAt(randomNum);
+        }
 
         return randomCard;
     }
+
+    /*[Rpc(SendTo.Server)]
+    void RequestRandomCardServerRpc(NetworkObjectReference playerRef)
+    {
+        if (Cards.Count == 0) return;
+        if (!IsServer) return;
+        if (!playerRef.TryGet(out NetworkObject playerObj)) return;
+
+        int index = UnityEngine.Random.Range(0, Cards.Count);
+        Card drawnCard = Cards[index];
+        Cards.RemoveAt(index);
+
+        // Tell the client which card they got
+        GiveCardToPlayerClientRpc(
+        drawnCard,
+        playerRef,
+        new RpcParams
+        {
+            Send = new RpcSendParams
+            {
+                Target = new[] { playerObj }
+            }
+        }
+    );
+    }
+
+    [Rpc(SendTo.SpecifiedInParams)]
+    public void GiveCardToPlayerClientRpc(Card card, NetworkObjectReference playerRef, RpcParams rpcParams = default)
+    {
+        if (!playerRef.TryGet(out NetworkObject playerObj)) return;
+
+        var playerScript = playerObj.GetComponent<PlayerScript>();
+        playerScript.ReceiveCard(card); 
+    }*/
 
     [Rpc(SendTo.Server)]
     void RemoveCardFromDeckServerRpc(int value)
@@ -73,6 +112,10 @@ public class CardDeck : NetworkBehaviour
     [Rpc(SendTo.Everyone)]
     void RemoveCardFromDeckClientRpc(int value)
     {
-        Cards.RemoveAt(value);
+        if (value >= 0 && value < Cards.Count)
+        {
+            Cards.RemoveAt(value);
+        }
+        
     }
 }

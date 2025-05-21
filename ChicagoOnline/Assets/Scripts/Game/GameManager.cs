@@ -44,15 +44,15 @@ public class GameManager : NetworkBehaviour
     private readonly int[] seatOrder = { 0, 2, 1, 3 };
     private int nextSeatIndex = 0;
 
+    private bool showingAnnouncement = false;
+    private Queue<(string text, float duration)> announcementQueue = new();
+
     private void Awake()
     {
         if (GM == null) GM = this;
         else Destroy(gameObject);
     }
 
-    /// <summary>
-    /// Called on the server when a client joins. Returns a seatId in [0..3].
-    /// </summary>
     public int AssignSeatId(ulong clientId)
     {
         if (nextSeatIndex < seatOrder.Length)
@@ -78,6 +78,7 @@ public class GameManager : NetworkBehaviour
                 item.GetComponentInChildren<PlayerUI>().AddPlayerScoreObjectClientRpc(networkObjectID, i);
             }      
         }*/
+        players[dealerPlayerIndex].isDealer.Value = true;
         yield return new WaitForSeconds(1);
         StartCoroutine(GameLoop());
     }
@@ -164,51 +165,77 @@ public class GameManager : NetworkBehaviour
 
         yield return new WaitForSeconds(2f);
 
-        turnPlayerIndex = (dealerPlayerIndex + 1) % players.Count;
-        print(turnPlayerIndex);
+        List<PlayerScript> turnOrder = GetTurnOrderBySeat();
 
-        // Put chicago turn here
-        int currentTurnPlayerWinner = 0;
+        // Get dealer's seat
+        int dealerSeat = players[dealerPlayerIndex].profile.SeatId.Value;
 
-        for (int i = 0; i < 5; i++)  // 5 rounds of trick-taking
+        // Find who is next after dealer in turn order
+        int startingIndex = turnOrder.FindIndex(p => p.profile.SeatId.Value == dealerSeat);
+        startingIndex = (startingIndex + 1) % turnOrder.Count;
+
+        int currentTurnPlayerWinnerIndex = 0;
+
+        var (cachedWinner, cachedWinnerHand) = GetWinner();
+
+        // Normal play, no chicago called
+        for (int round = 0; round < 5; round++)
         {
             int cachedCardValue = 0;
-            currentTurnPlayerWinner = turnPlayerIndex; // Set first player as default winner
+            currentTurnPlayerWinnerIndex = startingIndex;
 
-            // First player starts the trick
-            for (int j = 0; j < players.Count; j++)
+            for (int j = 0; j < turnOrder.Count; j++)
             {
-                players[turnPlayerIndex].myTurn.Value = true;
-                while (players[turnPlayerIndex].myTurn.Value)
+                int index = (startingIndex + j) % turnOrder.Count;
+                PlayerScript currentPlayer = turnOrder[index];
+
+                currentPlayer.myTurn.Value = true;
+
+                while (currentPlayer.myTurn.Value)
                 {
                     yield return null;
                 }
 
-                // First card played determines the suit
                 if (j == 0)
                 {
                     currentSuit = lastPlayedCard._suit;
-                    cachedCardValue = lastPlayedCard.value == 1 ? 14 : lastPlayedCard.value; // Treat Ace as 14
-                    currentTurnPlayerWinner = turnPlayerIndex;
+                    cachedCardValue = lastPlayedCard.value == 1 ? 14 : lastPlayedCard.value;
+                    currentTurnPlayerWinnerIndex = index;
                 }
                 else if (lastPlayedCard._suit == currentSuit)
                 {
-                    int lastCardValue = lastPlayedCard.value == 1 ? 14 : lastPlayedCard.value; // Treat Ace as 14
-
+                    int lastCardValue = lastPlayedCard.value == 1 ? 14 : lastPlayedCard.value;
                     if (lastCardValue > cachedCardValue)
                     {
                         cachedCardValue = lastCardValue;
-                        currentTurnPlayerWinner = turnPlayerIndex;
+                        currentTurnPlayerWinnerIndex = index;
                     }
                 }
-
-                turnPlayerIndex = (turnPlayerIndex + 1) % players.Count;
             }
 
-            // Winner starts the next trick
-            turnPlayerIndex = currentTurnPlayerWinner;
-        }
+            // Winner starts next round
+            if (round == 4)
+            {
+                PlayerScript winner = turnOrder[currentTurnPlayerWinnerIndex];
 
+                yield return StartCoroutine(ShowAnnouncementText($"Seat {winner.profile.SeatId.Value} won the round, and gets {GameRules.roundWin_Points} points.", 3f));
+                winner.points.Value += GameRules.roundWin_Points;
+
+                if (cachedWinner != null)
+                {
+                    yield return StartCoroutine(ShowAnnouncementText($"Seat {cachedWinner.profile.SeatId.Value} has {cachedWinnerHand} and gets {GameRules.handPoints[cachedWinnerHand]} points.", 3f));
+             
+                    cachedWinner.points.Value += GameRules.handPoints[cachedWinnerHand];
+                }
+
+                while (showingAnnouncement)
+                {
+                    yield return null;
+                }
+            }
+
+            startingIndex = currentTurnPlayerWinnerIndex;
+        }
 
 
     }
@@ -236,11 +263,40 @@ public class GameManager : NetworkBehaviour
         {
             print("Try send explosive text");
 
-            yield return StartCoroutine(ShowAnnouncementText($"Player {playerIndex + 1} has {highestHand} and gets {GameRules.handPoints[highestHand]} points", 3f));
+            yield return StartCoroutine(ShowAnnouncementText($"Seat {currentWinner.profile.SeatId.Value} has the highest {highestHand} and gets {GameRules.handPoints[highestHand]} points.", 3f));
+            //QueueAnnouncementText($"Seat {currentWinner.profile.SeatId.Value} has {highestHand} and gets {GameRules.handPoints[highestHand]} points", 3f);
+
+            // Unused, wanted to do queues but was not really necessesary
+            /*while (showingAnnouncement)
+            {
+                yield return null;
+            }*/
 
             currentWinner.points.Value += GameRules.handPoints[highestHand];
         }
         yield return null;
+    }
+
+    (PlayerScript, Hands hand) GetWinner()
+    {
+        Hands highestHand = Hands.Nothing;
+        PlayerScript currentWinner = null;
+        int playerIndex = 0;
+
+        for (int i = 0; i < players.Count; i++)
+        {
+            HandDetector Hand = new(players[i].GetHand());
+            Hands playerHand = Hand.CheckHand();
+
+            if (playerHand < highestHand)
+            {
+                highestHand = playerHand;
+                currentWinner = players[i];
+                playerIndex = i;
+            }
+        }
+
+        return (currentWinner, highestHand);
     }
 
     public IEnumerator EndRoundCleanup()
@@ -250,7 +306,11 @@ public class GameManager : NetworkBehaviour
         CleanUpRpc();
         deck.InitializeDeck();
 
-        yield return new WaitForSeconds(3f);
+        yield return StartCoroutine(ShowAnnouncementText($"New Round!", 1f));
+
+        AdvanceDealer();
+
+        yield return new WaitForSeconds(1f);
     }
 
     [Rpc(SendTo.Server)]
@@ -267,22 +327,36 @@ public class GameManager : NetworkBehaviour
     }
 
     [Rpc(SendTo.Server)]
-    public void AddCardToMiddleServerRpc(int value, Suit suit)
+    public void PlayCardRpc(int value, Suit suit, int seatId)
     {
         lastPlayedCard = new(value, suit);
 
-        AddCardToMiddleClientRpc(value, suit);
+        AddCardToTableRpc(value, suit, seatId);
     }
 
     [Rpc(SendTo.Everyone)]
-    public void AddCardToMiddleClientRpc(int value, Suit suit)
+    public void AddCardToTableRpc(int value, Suit suit, int seatId)
     {
-        GameObject cardUI = Instantiate(cardPrefab, canvas.transform);
-        cardUI.transform.parent = canvas.transform;
+        GameObject cardUI = Instantiate(cardPrefab);
+
+        Transform parent = GameUI.Instance.GetCardParent(seatId);
+        if (parent == null)
+        {
+            Debug.LogError($"Card parent is null for seatId {seatId}");
+            return;
+        }
+
+        cardUI.transform.SetParent(parent, false); // false = retain local layout settings
+        RectTransform rectTransform = cardUI.GetComponent<RectTransform>();
+        rectTransform.localPosition = Vector3.zero;
+
+        Quaternion randomZRotation = Quaternion.Euler(0, 0, Random.Range(-30f, 30f));
+        rectTransform.localRotation = randomZRotation;
+
+        cardUI.GetComponent<RawImage>().texture =
+            Resources.Load<Texture2D>("MyCards/Cards/" + (Suit)suit + value);
 
         cardsOnTable.Add(cardUI);
-        cardUI.GetComponent<RawImage>().texture = Resources.Load<Texture2D>("MyCards/Cards/" + (Suit)suit + value);
-        cardUI.GetComponent<RectTransform>().rotation = Quaternion.Euler(0, 0, Random.Range(-30f, 30f));
     }
 
     [Rpc(SendTo.Everyone)]
@@ -327,8 +401,45 @@ public class GameManager : NetworkBehaviour
         }
     }
 
+    void QueueAnnouncementText(string text, float duration)
+    {
+        announcementQueue.Enqueue((text, duration));
+
+        if (!showingAnnouncement)
+        {
+            StartCoroutine(ShowAnnouncementText());
+        }
+    }
+
+    IEnumerator ShowAnnouncementText()
+    {
+        showingAnnouncement = true;
+
+        while (announcementQueue.Count > 0)
+        {
+            var (text, duration) = announcementQueue.Dequeue();
+
+            foreach (var item in players)
+            {
+                item.GetComponentInChildren<PlayerUI>().AnnouncementTextRpc(text);
+            }
+
+            yield return new WaitForSeconds(duration);
+
+            foreach (var item in players)
+            {
+                item.GetComponentInChildren<PlayerUI>().HideTextRpc();
+            }
+
+            yield return new WaitForSeconds(0.2f);
+        }
+
+        showingAnnouncement = false;
+    }
+
     IEnumerator ShowAnnouncementText(string text, float duration)
     {
+
         foreach (var item in players)
         {
             item.GetComponentInChildren<PlayerUI>().AnnouncementTextRpc(text);
@@ -340,7 +451,7 @@ public class GameManager : NetworkBehaviour
         {
             item.GetComponentInChildren<PlayerUI>().HideTextRpc();
         }
-
+        yield return new WaitForSeconds(1f);
     }
 
     private bool AllPlayersBelowMaxScore(int maxScore = 52)
@@ -355,5 +466,63 @@ public class GameManager : NetworkBehaviour
         return true;
     }
 
+    public PlayerScript GetPlayerBySeat(int seatId)
+    {
+        foreach (var p in players)
+        {
+            if (p.profile.SeatId.Value == seatId)
+                return p;
+        }
+        return null;
+    }
+
+    private List<PlayerScript> GetTurnOrderBySeat()
+    {
+        List<PlayerScript> ordered = new();
+
+        int[] clockwiseSeats = { 0, 1, 2, 3 };
+
+        foreach (int seatId in clockwiseSeats)
+        {
+            foreach (var p in players)
+            {
+                if (p.profile.SeatId.Value == seatId)
+                {
+                    ordered.Add(p);
+                    break;
+                }
+            }
+        }
+
+        return ordered;
+    }
+
+    private void AdvanceDealer()
+    {
+        List<int> occupiedSeats = new();
+        foreach (var player in players)
+        {
+            player.isDealer.Value = false;
+            occupiedSeats.Add(player.profile.SeatId.Value);
+        }
+        occupiedSeats.Sort();
+
+        int currentDealerSeat = players[dealerPlayerIndex].profile.SeatId.Value;
+
+        int currentIndex = occupiedSeats.IndexOf(currentDealerSeat);
+
+        int nextIndex = (currentIndex + 1) % occupiedSeats.Count;
+        int nextDealerSeat = occupiedSeats[nextIndex];
+
+        for (int i = 0; i < players.Count; i++)
+        {
+            if (players[i].profile.SeatId.Value == nextDealerSeat)
+            {
+                dealerPlayerIndex = i;
+                players[i].isDealer.Value = true;
+                break;
+            }
+        }
+    }
 
 }

@@ -97,7 +97,7 @@ Material:
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
     - _DistortSpeed: 0.97
-    - _DistortionStrength: 0.5
+    - _DistortionStrength: 0.16
     - _DstBlend: 0
     - _DstBlendAlpha: 0
     - _EnvironmentReflections: 1

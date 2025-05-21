@@ -8,6 +8,7 @@ using UnityEngine;
 public class PlayerUI : NetworkBehaviour
 {
     public Camera playerCamera;
+    public PlayerScript playerScript;
 
     [SerializeField] private TextMeshProUGUI currentTurnText;
     [SerializeField] private TextMeshProUGUI explosiveText;
@@ -16,16 +17,23 @@ public class PlayerUI : NetworkBehaviour
     [SerializeField] private Transform scoreboard;
     [SerializeField] private GameObject playerScorePrefab;
 
+    [SerializeField] private TextMeshProUGUI localScoreText;
+    [SerializeField] private GameObject dealerButtonUI;
+
     [SerializeField]
     private List<ScoreScript> scoreList;
 
     public RectTransform[] seatContainers;
+
 
     void Start()
     {
         if (IsOwner)
         {
             GameManager.GM.currentTurn.OnValueChanged += UpdateTurnText;
+            playerScript.points.OnValueChanged += UpdateScore;
+            playerScript.isDealer.OnValueChanged += UpdateDealer;
+
         }
         else
         {
@@ -33,6 +41,16 @@ public class PlayerUI : NetworkBehaviour
             playerCamera.enabled = false;
         }
         
+    }
+
+    private void UpdateDealer(bool previousValue, bool newValue)
+    {
+        dealerButtonUI.SetActive(newValue);
+    }
+
+    private void UpdateScore(int previousValue, int newValue)
+    {
+        localScoreText.SetText(newValue.ToString());
     }
 
     private void UpdateTurnText(int previousValue, int newValue)
@@ -60,26 +78,4 @@ public class PlayerUI : NetworkBehaviour
         explosiveText.GetComponent<Animator>().Play("HideText", -1, 0f);
     }
 
-    [Rpc(SendTo.ClientsAndHost)]
-    public void AddPlayerScoreObjectClientRpc(ulong playerNetworkObjectId, int playerIndex)
-    {
-        // Find the NetworkObject by ID
-        if (NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(playerNetworkObjectId, out NetworkObject networkObject))
-        {
-            // Get the PlayerScript from the found NetworkObject
-            PlayerScript playerScript = networkObject.GetComponent<PlayerScript>();
-            if (playerScript != null)
-            {
-                GameObject scoreObj = Instantiate(playerScorePrefab, scoreboard);
-                ScoreScript score = scoreObj.GetComponent<ScoreScript>();
-
-                //score.InitializeScore(playerScript, playerIndex);
-
-                scoreList.Add(score);
-            }
-        }
-   
-        
-
-    }
 }

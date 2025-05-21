@@ -13,7 +13,7 @@ public class PlayerProfile : NetworkBehaviour
 
     // --- networked seat ID ---
     //public NetworkVariable<int> SeatId = new(-1);
-    public NetworkVariable<int> NewSeatId = new(-1);
+    public NetworkVariable<int> SeatId = new(-1);
 
     [Header("UI (prefab‐child)")]
     [Tooltip("Disable this canvas on non‐owner")]
@@ -25,6 +25,7 @@ public class PlayerProfile : NetworkBehaviour
 
     // track spawned UI instances (keyed by clientId)
     private Dictionary<ulong, RectTransform> spawnedUI = new Dictionary<ulong, RectTransform>();
+    [SerializeField] Transform myCardPlacement;
 
     private bool _uiInitialized = false;
     public override void OnNetworkSpawn()
@@ -32,7 +33,7 @@ public class PlayerProfile : NetworkBehaviour
         OnProfileSpawned?.Invoke(this);
 
         if (IsServer)
-            NewSeatId.Value = GameManager.GM.AssignSeatId(OwnerClientId);
+            SeatId.Value = GameManager.GM.AssignSeatId(OwnerClientId);
 
         if (!IsOwner)
         {
@@ -41,9 +42,9 @@ public class PlayerProfile : NetworkBehaviour
         else
         {
             GameUI.Instance.RegisterPlayer(this);
-            NewSeatId.OnValueChanged += OnSeatIdAssigned;
+            SeatId.OnValueChanged += OnSeatIdAssigned;
 
-            OnSeatIdAssigned(-1, NewSeatId.Value);
+            OnSeatIdAssigned(-1, SeatId.Value);
         }
 
         
@@ -54,7 +55,7 @@ public class PlayerProfile : NetworkBehaviour
         OnProfileDespawned?.Invoke(this);
 
         GameUI.Instance.UnregisterPlayer(this);
-        NewSeatId.OnValueChanged -= OnSeatIdAssigned;
+        SeatId.OnValueChanged -= OnSeatIdAssigned;
     }
 
     private void OnSeatIdAssigned(int previousValue, int newValue)
@@ -86,7 +87,7 @@ public class PlayerProfile : NetworkBehaviour
         // Wait until all other profiles have valid seat IDs
         while (GameUI.Instance.AllProfiles
             .Where(p => p != this)
-            .Any(p => p.NewSeatId.Value < 0 || p.NewSeatId.Value >= seatContainers.Length))
+            .Any(p => p.SeatId.Value < 0 || p.SeatId.Value >= seatContainers.Length))
         {
             yield return null;
         }
@@ -103,7 +104,7 @@ public class PlayerProfile : NetworkBehaviour
         if (!IsOwner || p == this) return;
         if (spawnedUI.ContainsKey(p.OwnerClientId)) return;
 
-        if (p.NewSeatId.Value < 0 || p.NewSeatId.Value >= seatContainers.Length)
+        if (p.SeatId.Value < 0 || p.SeatId.Value >= seatContainers.Length)
         {
             StartCoroutine(WaitForSeatIdThenAddUI(p));
             return;
@@ -117,14 +118,14 @@ public class PlayerProfile : NetworkBehaviour
         var scoreScript = rect.GetComponent<ScoreScript>();
         var playerScript = p.GetComponent<PlayerScript>();
         int playerIndex = GameUI.Instance.AllProfiles.IndexOf(p);
-        scoreScript.InitializeScore(playerScript, playerIndex);
+        scoreScript.InitializeScore(playerScript, playerIndex, p.SeatId.Value);
 
         TryUpdateLayout();
     }
 
     private IEnumerator WaitForSeatIdThenAddUI(PlayerProfile p)
     {
-        while (p.NewSeatId.Value < 0 || p.NewSeatId.Value >= seatContainers.Length)
+        while (p.SeatId.Value < 0 || p.SeatId.Value >= seatContainers.Length)
             yield return null;
 
         TryAddUI(p);
@@ -153,12 +154,14 @@ public class PlayerProfile : NetworkBehaviour
     }
     private void UpdateLayout()
     {
-        int mySeat = NewSeatId.Value;
+        int mySeat = SeatId.Value;
 
         foreach (var kvp in spawnedUI)
         {
             ulong otherClientId = kvp.Key;
             RectTransform rect = kvp.Value;
+            ScoreScript score = kvp.Value.GetComponent<ScoreScript>();
+
 
             PlayerProfile other = GameUI.Instance.AllProfiles.FirstOrDefault(p => p.OwnerClientId == otherClientId);
             if (other == null)
@@ -167,19 +170,55 @@ public class PlayerProfile : NetworkBehaviour
                 continue;
             }
 
-            int theirSeat = other.NewSeatId.Value;
+            int theirSeat = other.SeatId.Value;
             Debug.Log($"[UpdateLayout] Player {other.OwnerClientId} has seat {theirSeat}");
 
             int relativeSeat = (theirSeat - mySeat + seatContainers.Length) % seatContainers.Length;
 
             rect.SetParent(seatContainers[relativeSeat], false);
             rect.localPosition = Vector3.zero;
+
+            if (score != null)
+            {
+                CardTablePlacement placement = seatContainers[relativeSeat].GetComponent<CardTablePlacement>();
+                if (placement == null) return;
+                score.cardPlacement = placement.cardPlacement;
+
+            }
             Debug.Log($"Me: {mySeat}, Them: {theirSeat}, RelativeSeat: {relativeSeat}");
         }
     }
 
 
+    public Transform GetCardSpawn(int seatId)
+    {
+        if (seatId == this.SeatId.Value)
+        {
+            return myCardPlacement;
+        }
 
+        foreach (var kvp in spawnedUI)
+        {
+            ulong otherClientId = kvp.Key;
+            PlayerProfile other = GameUI.Instance.AllProfiles.FirstOrDefault(p => p.OwnerClientId == otherClientId);
+            if (other == null)
+            {
+                Debug.LogWarning($"[UpdateLayout] Could not find PlayerProfile for client {otherClientId}");
+                continue;
+            }
+
+            if (other.SeatId.Value == seatId)
+            {
+                ScoreScript score = kvp.Value.GetComponent<ScoreScript>();
+                if (score != null)
+                {
+                    return score.cardPlacement;
+                }
+                
+            }
+        }
+        return null;
+    }
 
 }
 

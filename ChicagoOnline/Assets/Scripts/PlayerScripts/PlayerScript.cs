@@ -14,6 +14,8 @@ public enum RoundType
 
 public class PlayerScript : NetworkBehaviour
 {
+    public PlayerProfile profile;
+
     [SerializeField]
     private Button randomCardButton;
 
@@ -49,8 +51,8 @@ public class PlayerScript : NetworkBehaviour
 
 
     public NetworkVariable<bool> myTurn = new(false);
-
     public NetworkVariable<int> points = new(0);
+    public NetworkVariable<bool> isDealer = new(false);
 
     public Card lastPlayedCard;
 
@@ -81,11 +83,12 @@ public class PlayerScript : NetworkBehaviour
 
     private void AddCardToMiddle()
     {
+        if (selectedCards == null) return;
 
         int value = hand[selectedCards[0]].value;
         Suit suit = hand[selectedCards[0]]._suit;
 
-        GameManager.GM.AddCardToMiddleServerRpc(value, suit);
+        GameManager.GM.PlayCardRpc(value, suit, profile.SeatId.Value);
         lastPlayedCard = hand[selectedCards[0]];
          
         DiscardCards();
@@ -200,38 +203,102 @@ public class PlayerScript : NetworkBehaviour
 
     void DiscardCards()
     {
-        List<int> tempIndexList = new();
+        /* List<int> tempIndexList = new();
 
-        foreach (int index in selectedCards)
+         foreach (int index in selectedCards)
+         {
+             tempIndexList.Add(index);
+         }
+
+         tempIndexList.Sort();
+
+         for (int i = tempIndexList.Count - 1; i >= 0; i--)
+         {
+             hand.RemoveAt(tempIndexList[i]);
+             Destroy(cardsUI[tempIndexList[i]]);
+             cardsUI.RemoveAt(tempIndexList[i]);
+
+             if (!IsServer)
+             {
+                 DiscardCardsServerRpc(tempIndexList[i]);
+             }
+         }
+
+         selectedCards.Clear();
+         UpdateCardPosRpc();
+         */
+        if (IsServer)
         {
-            tempIndexList.Add(index);
+            DoDiscard(selectedCards.ToArray());
         }
-
-        tempIndexList.Sort();
-
-        for (int i = tempIndexList.Count - 1; i >= 0; i--)
+        else
         {
-            hand.RemoveAt(tempIndexList[i]);
-            Destroy(cardsUI[tempIndexList[i]]);
-            cardsUI.RemoveAt(tempIndexList[i]);
-
-            if (!IsServer)
-            {
-                DiscardCardsServerRpc(tempIndexList[i]);
-            }
+            DiscardCardsServerRpc(selectedCards.ToArray());
         }
 
         selectedCards.Clear();
-        UpdateCardPosRpc();
     }
 
     [Rpc(SendTo.Server)]
-    void DiscardCardsServerRpc(int index)
+    void DiscardCardsServerRpc(int[] indices)
     {
-        hand.RemoveAt(index);
-        Destroy(cardsUI[index]);
-        cardsUI.RemoveAt(index);
+        DoDiscard(indices);
     }
+
+    void DoDiscard(int[] indices)
+    {
+        List<int> sortedIndices = new(indices);
+        sortedIndices.Sort();
+        sortedIndices.Reverse(); // descending
+
+        foreach (int i in sortedIndices)
+        {
+            if (i < hand.Count) hand.RemoveAt(i);
+            if (i < cardsUI.Count)
+            {
+                Destroy(cardsUI[i]);
+                cardsUI.RemoveAt(i);
+            }
+        }
+
+        UpdateCardPosRpc();
+
+        DoDiscardClientRpc(indices);
+    }
+
+    [Rpc(SendTo.Owner)]
+    void DoDiscardClientRpc(int[] indices)
+    {
+        if (IsServer) return;
+
+        List<int> sortedIndices = new(indices);
+        sortedIndices.Sort();
+        sortedIndices.Reverse();
+
+        foreach (int i in sortedIndices)
+        {
+            if (i < hand.Count) hand.RemoveAt(i);
+            if (i < cardsUI.Count)
+            {
+                Destroy(cardsUI[i]);
+                cardsUI.RemoveAt(i);
+            }
+        }
+
+        UpdateCardPosRpc();
+    }
+
+
+    /*  [Rpc(SendTo.Server)]
+      void DiscardCardsServerRpc(int index)
+      {
+          this.hand.RemoveAt(index);
+          if (cardsUI[index] != null) 
+          {
+              Destroy(cardsUI[index]);
+              cardsUI.RemoveAt(index);
+          }
+      }*/
 
     public void SelectCard(int value)
     {
@@ -258,6 +325,8 @@ public class PlayerScript : NetworkBehaviour
             //cardsUI[i].GetComponent<CardUI>().UpdateXPos(i);
         }
     }
+
+
 
     private RoundType roundType;
     [Rpc(SendTo.Owner)]

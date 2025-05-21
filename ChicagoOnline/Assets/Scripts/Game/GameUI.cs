@@ -74,5 +74,10 @@ public class GameUI : NetworkBehaviour
         }
         //AllProfilesDict.Remove(OwnerClientId);
     }
+
+    public Transform GetCardParent(int seatId)
+    {
+        return LocalProfile.GetCardSpawn(seatId);
+    }
 }
 
