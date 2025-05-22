@@ -1062,6 +1062,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5370d0f894672ef4fb1a106f977e7e7c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  LocalProfile: {fileID: 0}
   AllProfiles: []
   profileUIPrefab: {fileID: 8198763471519337584, guid: 29a7b6db880f0f7448908a1a175e7061, type: 3}
 --- !u!1 &1544442710
@@ -1441,7 +1442,8 @@ MonoBehaviour:
   targetMaterial: {fileID: 2100000, guid: 5b9484776319ded489e11fd794914d28, type: 2}
   LobbyColor: {r: 0.6886792, g: 0.37680563, b: 0, a: 1}
   CollectingColor: {r: 0.06397277, g: 0.745283, b: 0, a: 1}
-  TrickTakingColor: {r: 0.509434, g: 0.07905265, b: 0.012014951, a: 1}
+  TrickTakingColor: {r: 0.6901961, g: 0.37647063, b: 0, a: 1}
+  ChicagoColor: {r: 0.6415094, g: 0, b: 0, a: 1}
   transitionDuration: 2
 --- !u!4 &2074355031
 Transform:

@@ -15,6 +15,7 @@ public enum RoundType
 public class PlayerScript : NetworkBehaviour
 {
     public PlayerProfile profile;
+    public PlayerUI UI;
 
     [SerializeField]
     private Button randomCardButton;
@@ -49,6 +50,10 @@ public class PlayerScript : NetworkBehaviour
     [SerializeField]
     private RectTransform cardPos;
 
+
+
+    public NetworkVariable<bool> calledChicago = new NetworkVariable<bool>();
+    public NetworkVariable<bool> hasAnsweredChicago = new NetworkVariable<bool>();
 
     public NetworkVariable<bool> myTurn = new(false);
     public NetworkVariable<int> points = new(0);

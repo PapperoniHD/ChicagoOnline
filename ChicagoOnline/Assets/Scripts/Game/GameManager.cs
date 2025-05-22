@@ -176,66 +176,154 @@ public class GameManager : NetworkBehaviour
 
         int currentTurnPlayerWinnerIndex = 0;
 
-        var (cachedWinner, cachedWinnerHand) = GetWinner();
 
-        // Normal play, no chicago called
-        for (int round = 0; round < 5; round++)
+
+        bool someoneCalledChicago = false;
+        PlayerScript chicagoPlayer = null;
+
+        // Ask everyone if they want to call chicago
+        for (int j = 0; j < turnOrder.Count; j++)
         {
-            int cachedCardValue = 0;
-            currentTurnPlayerWinnerIndex = startingIndex;
+            int index = (startingIndex + j) % turnOrder.Count;
+            PlayerScript currentPlayer = turnOrder[index];
 
-            for (int j = 0; j < turnOrder.Count; j++)
+            currentPlayer.UI.AskForChicagoRpc();
+
+            while (!currentPlayer.hasAnsweredChicago.Value)
             {
-                int index = (startingIndex + j) % turnOrder.Count;
-                PlayerScript currentPlayer = turnOrder[index];
+                yield return null;
+            }
 
-                currentPlayer.myTurn.Value = true;
+            if (currentPlayer.calledChicago.Value)
+            {
+                background.ChangeToChicagoRpc();
+                someoneCalledChicago = true;
+                chicagoPlayer = currentPlayer;
+                yield return StartCoroutine(ShowAnnouncementText($"Seat {currentPlayer.profile.SeatId.Value} called CHICAGO!", 2f));
+                yield return new WaitForSeconds(0.5f);
+                break;
+            }
+        }
 
-                while (currentPlayer.myTurn.Value)
-                {
-                    yield return null;
-                }
+        if (someoneCalledChicago)
+        {
+            startingIndex = turnOrder.IndexOf(chicagoPlayer);
 
-                if (j == 0)
+            for (int round = 0; round < 5; round++)
+            {
+                int cachedCardValue = 0;
+                currentTurnPlayerWinnerIndex = startingIndex;
+
+                for (int j = 0; j < turnOrder.Count; j++)
                 {
-                    currentSuit = lastPlayedCard._suit;
-                    cachedCardValue = lastPlayedCard.value == 1 ? 14 : lastPlayedCard.value;
-                    currentTurnPlayerWinnerIndex = index;
-                }
-                else if (lastPlayedCard._suit == currentSuit)
-                {
-                    int lastCardValue = lastPlayedCard.value == 1 ? 14 : lastPlayedCard.value;
-                    if (lastCardValue > cachedCardValue)
+                    int index = (startingIndex + j) % turnOrder.Count;
+                    PlayerScript currentPlayer = turnOrder[index];
+
+                    currentPlayer.myTurn.Value = true;
+
+                    while (currentPlayer.myTurn.Value)
                     {
-                        cachedCardValue = lastCardValue;
+                        yield return null;
+                    }
+
+                    if (j == 0)
+                    {
+                        currentSuit = lastPlayedCard._suit;
+                        cachedCardValue = lastPlayedCard.value == 1 ? 14 : lastPlayedCard.value;
                         currentTurnPlayerWinnerIndex = index;
                     }
+                    else if (lastPlayedCard._suit == currentSuit)
+                    {
+                        int lastCardValue = lastPlayedCard.value == 1 ? 14 : lastPlayedCard.value;
+                        if (lastCardValue > cachedCardValue)
+                        {
+                            cachedCardValue = lastCardValue;
+                            currentTurnPlayerWinnerIndex = index;
+                        }
+                    }
                 }
+
+                // Check if someone beat the chicagoPlayer
+                if (turnOrder[currentTurnPlayerWinnerIndex] != chicagoPlayer)
+                {
+                    yield return StartCoroutine(ShowAnnouncementText($"Seat {turnOrder[currentTurnPlayerWinnerIndex].profile.SeatId.Value} broke the CHICAGO! Seat {chicagoPlayer.profile.SeatId.Value} loses 15 points.", 3f));
+                    chicagoPlayer.points.Value -= GameRules.ChicagoPoints;
+                    yield break;
+                }
+
+                // Chicago player won the trick, they start next
+                startingIndex = turnOrder.IndexOf(chicagoPlayer);
             }
 
-            // Winner starts next round
-            if (round == 4)
-            {
-                PlayerScript winner = turnOrder[currentTurnPlayerWinnerIndex];
-
-                yield return StartCoroutine(ShowAnnouncementText($"Seat {winner.profile.SeatId.Value} won the round, and gets {GameRules.roundWin_Points} points.", 3f));
-                winner.points.Value += GameRules.roundWin_Points;
-
-                if (cachedWinner != null)
-                {
-                    yield return StartCoroutine(ShowAnnouncementText($"Seat {cachedWinner.profile.SeatId.Value} has {cachedWinnerHand} and gets {GameRules.handPoints[cachedWinnerHand]} points.", 3f));
-             
-                    cachedWinner.points.Value += GameRules.handPoints[cachedWinnerHand];
-                }
-
-                while (showingAnnouncement)
-                {
-                    yield return null;
-                }
-            }
-
-            startingIndex = currentTurnPlayerWinnerIndex;
+            // If all 5 tricks are won by chicagoPlayer
+            yield return StartCoroutine(ShowAnnouncementText($"Seat {chicagoPlayer.profile.SeatId.Value} successfully completed CHICAGO and gets 15 points!", 3f));
+            chicagoPlayer.points.Value += GameRules.ChicagoPoints;
         }
+        else
+        {
+            // Normal play, no chicago called
+            yield return StartCoroutine(ShowAnnouncementText($"No CHICAGO was called.", 1.5f));
+            var (cachedWinner, cachedWinnerHand) = GetWinner();
+            for (int round = 0; round < 5; round++)
+            {
+                int cachedCardValue = 0;
+                currentTurnPlayerWinnerIndex = startingIndex;
+
+                for (int j = 0; j < turnOrder.Count; j++)
+                {
+                    int index = (startingIndex + j) % turnOrder.Count;
+                    PlayerScript currentPlayer = turnOrder[index];
+
+                    currentPlayer.myTurn.Value = true;
+
+                    while (currentPlayer.myTurn.Value)
+                    {
+                        yield return null;
+                    }
+
+                    if (j == 0)
+                    {
+                        currentSuit = lastPlayedCard._suit;
+                        cachedCardValue = lastPlayedCard.value == 1 ? 14 : lastPlayedCard.value;
+                        currentTurnPlayerWinnerIndex = index;
+                    }
+                    else if (lastPlayedCard._suit == currentSuit)
+                    {
+                        int lastCardValue = lastPlayedCard.value == 1 ? 14 : lastPlayedCard.value;
+                        if (lastCardValue > cachedCardValue)
+                        {
+                            cachedCardValue = lastCardValue;
+                            currentTurnPlayerWinnerIndex = index;
+                        }
+                    }
+                }
+
+                // Winner starts next round
+                if (round == 4)
+                {
+                    PlayerScript winner = turnOrder[currentTurnPlayerWinnerIndex];
+
+                    yield return StartCoroutine(ShowAnnouncementText($"Seat {winner.profile.SeatId.Value} won the round, and gets {GameRules.roundWin_Points} points.", 3f));
+                    winner.points.Value += GameRules.roundWin_Points;
+
+                    if (cachedWinner != null)
+                    {
+                        yield return StartCoroutine(ShowAnnouncementText($"Seat {cachedWinner.profile.SeatId.Value} has {cachedWinnerHand} and gets {GameRules.handPoints[cachedWinnerHand]} points.", 3f));
+
+                        cachedWinner.points.Value += GameRules.handPoints[cachedWinnerHand];
+                    }
+
+                    while (showingAnnouncement)
+                    {
+                        yield return null;
+                    }
+                }
+
+                startingIndex = currentTurnPlayerWinnerIndex;
+            }
+        }
+
+        
 
 
     }
@@ -305,6 +393,13 @@ public class GameManager : NetworkBehaviour
 
         CleanUpRpc();
         deck.InitializeDeck();
+
+        // Reset chicago
+        foreach (var player in players)
+        {
+            player.calledChicago.Value = false;
+            player.hasAnsweredChicago.Value = false;
+        }
 
         yield return StartCoroutine(ShowAnnouncementText($"New Round!", 1f));
 

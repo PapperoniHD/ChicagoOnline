@@ -19,6 +19,7 @@ public class PlayerUI : NetworkBehaviour
 
     [SerializeField] private TextMeshProUGUI localScoreText;
     [SerializeField] private GameObject dealerButtonUI;
+    [SerializeField] private GameObject chicagoPromptUI;
 
     [SerializeField]
     private List<ScoreScript> scoreList;
@@ -42,6 +43,27 @@ public class PlayerUI : NetworkBehaviour
         }
         
     }
+
+    [Rpc(SendTo.Owner)]
+    public void AskForChicagoRpc()
+    {
+        chicagoPromptUI.SetActive(true);
+    }
+
+    [Rpc(SendTo.Server)]
+    public void SetChicagoResponeRpc(bool didCall)
+    {
+        playerScript.calledChicago.Value = didCall;
+        playerScript.hasAnsweredChicago.Value = true;
+        OnChicagoResponseClientRpc();
+    }
+
+    [Rpc(SendTo.Owner)]
+    public void OnChicagoResponseClientRpc()
+    {
+        chicagoPromptUI.SetActive(false);
+    }
+
 
     private void UpdateDealer(bool previousValue, bool newValue)
     {
