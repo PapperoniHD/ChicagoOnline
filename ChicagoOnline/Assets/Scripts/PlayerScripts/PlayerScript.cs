@@ -5,6 +5,8 @@ using UnityEngine.UI;
 using TMPro;
 using Unity.Netcode;
 using System;
+using Unity.Collections;
+using Steamworks;
 
 public enum RoundType
 {
@@ -50,6 +52,9 @@ public class PlayerScript : NetworkBehaviour
     [SerializeField]
     private RectTransform cardPos;
 
+    // For steam
+    public NetworkVariable<ulong> steamId = new(writePerm: NetworkVariableWritePermission.Server);
+    public NetworkVariable<FixedString128Bytes> steamName = new(writePerm: NetworkVariableWritePermission.Server);
 
 
     public NetworkVariable<bool> calledChicago = new NetworkVariable<bool>();
@@ -60,6 +65,21 @@ public class PlayerScript : NetworkBehaviour
     public NetworkVariable<bool> isDealer = new(false);
 
     public Card lastPlayedCard;
+
+    public override void OnNetworkSpawn()
+    {
+        if (IsOwner && SteamClient.IsValid)
+        {
+            SubmitSteamDataServerRpc(SteamClient.SteamId, SteamClient.Name);
+        }
+    }
+
+    [Rpc(SendTo.Server)]
+    private void SubmitSteamDataServerRpc(ulong id, string name)
+    {
+        steamId.Value = id;
+        steamName.Value = new FixedString128Bytes(name);
+    }
 
     private void Start()
     {

@@ -815,6 +815,7 @@ MonoBehaviour:
   score_Text: {fileID: 717881249347583107}
   cardPlacement: {fileID: 0}
   dealerButton: {fileID: 2031872042184722167}
+  avatarImage: {fileID: 7112787053048728764}
 --- !u!95 &7961601931609149778
 Animator:
   serializedVersion: 5
