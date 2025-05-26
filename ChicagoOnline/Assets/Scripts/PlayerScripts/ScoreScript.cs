@@ -22,17 +22,14 @@ public class ScoreScript : MonoBehaviour
 
     public RawImage avatarImage;
 
-    private void Start()
-    {
-
-    }
-
+    public GameObject[] cards_UI;
 
     public void InitializeScore(PlayerScript playerscript, int playerIndex, int seatId)
     {
         this.seatId = seatId;
         playerscript.points.OnValueChanged += UpdateScore;
         playerscript.isDealer.OnValueChanged += UpdateDealer;
+        playerscript.handAmount.OnValueChanged += UpdateCardsUI;
 
         if (!SteamClient.IsValid)
         {
@@ -44,6 +41,8 @@ public class ScoreScript : MonoBehaviour
         }
               
     }
+
+    
 
     async void SetSteamProfile(ulong steamId, string steamName)
     {
@@ -87,5 +86,20 @@ public class ScoreScript : MonoBehaviour
         score_Text.text = newValue.ToString();
     }
 
+    private void UpdateCardsUI(int previousValue, int newValue)
+    {
+        for (int i = 0; i < cards_UI.Length; i++)
+        {
+            if (i > newValue - 1)
+            {
+                cards_UI[i].SetActive(false);
+            }
+            else
+            {
+                cards_UI[i].SetActive(true);
+            }
+
+        }
+    }
 
 }

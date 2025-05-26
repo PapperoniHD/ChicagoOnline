@@ -1189,7 +1189,8 @@ MonoBehaviour:
   canvas: {fileID: 1228716550}
   cardPrefab: {fileID: 5434054966456394227, guid: 28be7f511753e4d47aad4ea5cf033cb8, type: 3}
   players: []
-  currentSuit: 0
+  currentSuit:
+    m_InternalValue: 0
   lastPlayedCard:
     value: 0
     _suit: 0
@@ -1765,9 +1766,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   targetMaterial: {fileID: 2100000, guid: 5b9484776319ded489e11fd794914d28, type: 2}
-  LobbyColor: {r: 0.6886792, g: 0.37680563, b: 0, a: 1}
-  CollectingColor: {r: 0.06397277, g: 0.745283, b: 0, a: 1}
-  TrickTakingColor: {r: 0.6901961, g: 0.37647063, b: 0, a: 1}
+  LobbyColor: {r: 0.18039216, g: 0.2627451, b: 0.24313727, a: 1}
+  CollectingColor: {r: 0.18039216, g: 0.2627451, b: 0.24313727, a: 1}
+  TrickTakingColor: {r: 0.3679245, g: 0.15455388, b: 0.12669098, a: 1}
   ChicagoColor: {r: 0.6415094, g: 0, b: 0, a: 1}
   transitionDuration: 2
 --- !u!4 &2074355031

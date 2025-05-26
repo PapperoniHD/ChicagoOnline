@@ -63,6 +63,8 @@ public class PlayerScript : NetworkBehaviour
     public NetworkVariable<bool> myTurn = new(false);
     public NetworkVariable<int> points = new(0);
     public NetworkVariable<bool> isDealer = new(false);
+    public NetworkVariable<int> handAmount = new(writePerm: NetworkVariableWritePermission.Owner, readPerm: NetworkVariableReadPermission.Everyone);
+    public NetworkVariable<int> chicagosWon = new(0);
 
     public Card lastPlayedCard;
 
@@ -108,16 +110,18 @@ public class PlayerScript : NetworkBehaviour
 
     private void AddCardToMiddle()
     {
-        if (selectedCards == null) return;
+        if (selectedCards.Count <= 0) return;
 
         int value = hand[selectedCards[0]].value;
         Suit suit = hand[selectedCards[0]]._suit;
 
         GameManager.GM.PlayCardRpc(value, suit, profile.SeatId.Value);
         lastPlayedCard = hand[selectedCards[0]];
-         
+
+        ResetCardSelection();
         DiscardCards();
         EndTurnRpc();
+        UpdateCardAmountForUI();
     }
 
     void StartGame()
@@ -136,32 +140,102 @@ public class PlayerScript : NetworkBehaviour
     [Rpc(SendTo.Owner)]
     public void SetActiveTurnRpc(bool previousValue, bool newValue)
     {
+        selectedCards.Clear();
+
+        UI.WaitingForChicagoUIRpc(false);
+
         if (newValue && roundType == RoundType.DiscardingCards)
         {
-            discardCardButton.gameObject.SetActive(true);
+            //discardCardButton.gameObject.SetActive(true);
             endTurnButton.gameObject.SetActive(true);
+            endTurnButton.GetComponentInChildren<TextMeshProUGUI>().SetText("Done");
+            UI.chooseCardsUI.SetActive(true);
         }
         else if(newValue && roundType == RoundType.Game)
         {
-            AddSelectedCardToMiddle.gameObject.SetActive(true);      
+            //AddSelectedCardToMiddle.gameObject.SetActive(true);
+            endTurnButton.gameObject.SetActive(true);
+            endTurnButton.GetComponentInChildren<TextMeshProUGUI>().SetText("Play Card");
+            UI.yourTurnUI.SetActive(true);
+
+            //CheckPlayableCards();
         }
         else
         {
-            AddSelectedCardToMiddle.gameObject.SetActive(false);
+            //AddSelectedCardToMiddle.gameObject.SetActive(false);
 
-            discardCardButton.gameObject.SetActive(false);
-            endTurnButton.gameObject.SetActive(false);
+            //discardCardButton.gameObject.SetActive(false);
+            //endTurnButton.gameObject.SetActive(false);
         }
     }
     void EndTurn()
     {
-        EndTurnRpc();
+        UI.yourTurnUI.SetActive(false);
+        UI.WaitingForChicagoUIRpc(true);
+        if (roundType == RoundType.Game)
+        {
+            AddCardToMiddle();
+        }
+        else
+        {
+            UI.chooseCardsUI.SetActive(false);
+            DiscardCards();
+            EndTurnRpc();
+        }
+        
     }
 
     [Rpc(SendTo.Server)]
     public void EndTurnRpc()
     {
         myTurn.Value = false;
+    }
+
+    [Rpc(SendTo.Owner)]
+    public void CheckPlayableCardsRpc(int currentSuit)
+    {
+        List<int> playableCards = new();
+
+        for (int i = 0; i < hand.Count; i++)
+        {
+            if (hand[i]._suit == (Suit)currentSuit)
+            {
+                playableCards.Add(i);
+            }
+        }
+
+        if (playableCards.Count > 0)
+        {
+
+            for (int i = 0; i < cardsUI.Count; i++)
+            {
+                var cardScript = cardsUI[i].GetComponent<CardUI>();
+                if (cardScript == null) continue;
+                if (playableCards.Contains(i))
+                {
+                    cardScript.CanSelect(true);
+                    cardScript.Outline(true);
+                }
+                else
+                {
+                    cardScript.CanSelect(false);
+                    cardScript.Outline(false);
+                }
+            }
+
+        }
+    }
+
+    void ResetCardSelection()
+    {
+        foreach (var item in cardsUI)
+        {
+            var cardScript = item.GetComponent<CardUI>();
+            if (cardScript == null) return;
+
+            cardScript.CanSelect(true);
+            cardScript.Outline(false);
+        }
     }
 
     void UpdateCardUI(Card card, int index)
@@ -214,6 +288,7 @@ public class PlayerScript : NetworkBehaviour
         hand.AddRange(tempHand);
 
         UpdateCardPosRpc();
+
     }
 
     [Rpc(SendTo.Owner)]
@@ -228,30 +303,7 @@ public class PlayerScript : NetworkBehaviour
 
     void DiscardCards()
     {
-        /* List<int> tempIndexList = new();
 
-         foreach (int index in selectedCards)
-         {
-             tempIndexList.Add(index);
-         }
-
-         tempIndexList.Sort();
-
-         for (int i = tempIndexList.Count - 1; i >= 0; i--)
-         {
-             hand.RemoveAt(tempIndexList[i]);
-             Destroy(cardsUI[tempIndexList[i]]);
-             cardsUI.RemoveAt(tempIndexList[i]);
-
-             if (!IsServer)
-             {
-                 DiscardCardsServerRpc(tempIndexList[i]);
-             }
-         }
-
-         selectedCards.Clear();
-         UpdateCardPosRpc();
-         */
         if (IsServer)
         {
             DoDiscard(selectedCards.ToArray());
@@ -262,6 +314,7 @@ public class PlayerScript : NetworkBehaviour
         }
 
         selectedCards.Clear();
+        UpdateCardAmountForUI();
     }
 
     [Rpc(SendTo.Server)]
@@ -310,7 +363,30 @@ public class PlayerScript : NetworkBehaviour
             }
         }
 
+        
         UpdateCardPosRpc();
+    }
+
+    [Rpc(SendTo.Owner)]
+    public void DiscardAllCardsRpc()
+    {
+        List<int> allCards = new();
+
+        for (int i = 0; i < hand.Count; i++)
+        {
+            allCards.Add(i);
+        }
+
+        if (IsServer)
+        {
+            DoDiscard(allCards.ToArray());
+        }
+        else
+        {
+            DiscardCardsServerRpc(allCards.ToArray());
+        }
+
+        selectedCards.Clear();
     }
 
 
@@ -330,14 +406,40 @@ public class PlayerScript : NetworkBehaviour
         if (!myTurn.Value) return;
 
         // If round is game, clearing cards ensuring no previous cards are in the list
-        if (roundType == RoundType.Game) selectedCards.Clear();
+
+
+        if (roundType == RoundType.Game)
+        {
+            selectedCards.Clear();
+
+            for (int i = 0; i < cardsUI.Count; i++)
+            {
+                if (i == value) continue;
+                var cardsScript = cardsUI[i].GetComponent<CardUI>();
+                if (cardsScript == null) return;
+                cardsScript.SelectCard(false);
+            }
+        }
 
         selectedCards.Add(value);
+
+        if (roundType == RoundType.DiscardingCards)
+        {
+            if (selectedCards.Count > 0)
+            {
+                endTurnButton.GetComponentInChildren<TextMeshProUGUI>().SetText("Discard");
+            }
+        }
     }
 
     public void UnselectCard(int value)
     {
         selectedCards.Remove(value);
+
+        if (roundType == RoundType.DiscardingCards && selectedCards.Count < 0)
+        {
+            endTurnButton.GetComponentInChildren<TextMeshProUGUI>().SetText("Done");
+        }
     }
 
     [Rpc(SendTo.Owner)]
@@ -349,6 +451,7 @@ public class PlayerScript : NetworkBehaviour
             cardsUI[i].GetComponent<CardUI>().UpdateXPos();
             //cardsUI[i].GetComponent<CardUI>().UpdateXPos(i);
         }
+        UpdateCardAmountForUI();
     }
 
 
@@ -363,5 +466,10 @@ public class PlayerScript : NetworkBehaviour
     public List<Card> GetHand()
     {
         return hand;
+    }
+
+    void UpdateCardAmountForUI()
+    {
+        handAmount.Value = hand.Count;
     }
 }

@@ -20,6 +20,9 @@ public class PlayerUI : NetworkBehaviour
     [SerializeField] private TextMeshProUGUI localScoreText;
     [SerializeField] private GameObject dealerButtonUI;
     [SerializeField] private GameObject chicagoPromptUI;
+    [SerializeField] private GameObject waitingUI;
+    public GameObject yourTurnUI;
+    public GameObject chooseCardsUI;
 
     [SerializeField]
     private List<ScoreScript> scoreList;
@@ -48,6 +51,12 @@ public class PlayerUI : NetworkBehaviour
     public void AskForChicagoRpc()
     {
         chicagoPromptUI.SetActive(true);
+    }
+
+    [Rpc(SendTo.Owner)]
+    public void WaitingForChicagoUIRpc(bool waiting)
+    {
+        waitingUI.SetActive(waiting);
     }
 
     [Rpc(SendTo.Server)]

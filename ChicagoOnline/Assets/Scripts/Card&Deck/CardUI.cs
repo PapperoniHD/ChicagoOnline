@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 public class CardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
@@ -17,11 +18,14 @@ public class CardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, 
     private float targetXPos;
     private float targetYPos;
 
+    private bool canSelect = true;
     private bool hover;
     public bool selected;
 
     public PlayerScript playerScript;
     private int childIndex = 0;
+
+    [SerializeField] Outline _outline;
 
     
     // Start is called before the first frame update
@@ -59,24 +63,23 @@ public class CardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, 
 
     public void OnPointerClick(PointerEventData eventData)
     {
+        if (!canSelect) return;
         if (!playerScript.myTurn.Value) return;
 
         selected = !selected;
 
-        if (selected)
-        {
-            targetYPos = selectedTargetYPos;
-            playerScript.SelectCard(cardIndex);
-        }
-        else
-        {
-            targetYPos = idleYPos;
-            playerScript.UnselectCard(cardIndex);
-        }
+        SelectCard(selected);
     }
 
     public void OnPointerEnter(PointerEventData eventData)
     {
+        if (PlayerSound.instance != null)
+        {
+            PlayerSound.instance.PlayHoverCard();
+        }
+        
+
+        if (!canSelect) return;
         hover = true;
         
         if (!selected)
@@ -90,6 +93,7 @@ public class CardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, 
 
     public void OnPointerExit(PointerEventData eventData)
     {
+        if (!canSelect) return;
         hover = false;
         if (!selected)
         {
@@ -98,5 +102,38 @@ public class CardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, 
 
         // Sets Card UI on top
         transform.SetSiblingIndex(childIndex);
+    }
+
+    public void SelectCard(bool select)
+    {
+        if (select)
+        {
+            targetYPos = selectedTargetYPos;
+            playerScript.SelectCard(cardIndex);
+        }
+        else
+        {
+            targetYPos = idleYPos;
+            playerScript.UnselectCard(cardIndex);
+        }
+    }
+
+    public void CanSelect(bool selectable)
+    {
+        canSelect = selectable;
+
+        if (selectable)
+        {
+            GetComponent<RawImage>().color = Color.white;
+        }
+        else
+        {
+            GetComponent<RawImage>().color = Color.gray;
+        }
+    }
+
+    public void Outline(bool enable)
+    {
+        _outline.enabled = enable;
     }
 }

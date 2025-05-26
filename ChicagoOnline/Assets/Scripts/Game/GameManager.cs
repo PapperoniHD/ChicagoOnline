@@ -33,8 +33,9 @@ public class GameManager : NetworkBehaviour
 
     private int turnPlayerIndex = 0;
 
-    [SerializeField]
-    private Suit currentSuit;
+    //[SerializeField]
+    //private int currentSuit;
+    public NetworkVariable<int> currentSuit = new();
     [SerializeField]
     private Card lastPlayedCard;
 
@@ -187,11 +188,22 @@ public class GameManager : NetworkBehaviour
             int index = (startingIndex + j) % turnOrder.Count;
             PlayerScript currentPlayer = turnOrder[index];
 
+            foreach (var player in players)
+            {
+                if (player == currentPlayer) continue;
+                player.UI.WaitingForChicagoUIRpc(true);
+            }
             currentPlayer.UI.AskForChicagoRpc();
+
 
             while (!currentPlayer.hasAnsweredChicago.Value)
             {
                 yield return null;
+            }
+
+            foreach (var player in players)
+            {
+                player.UI.WaitingForChicagoUIRpc(false);
             }
 
             if (currentPlayer.calledChicago.Value)
@@ -219,6 +231,16 @@ public class GameManager : NetworkBehaviour
                     int index = (startingIndex + j) % turnOrder.Count;
                     PlayerScript currentPlayer = turnOrder[index];
 
+                    if (j != 0)
+                    {
+                        currentPlayer.CheckPlayableCardsRpc(currentSuit.Value);
+                    }
+
+                    foreach (var player in players)
+                    {
+                        if (player == currentPlayer) continue;
+                        player.UI.WaitingForChicagoUIRpc(true);
+                    }
                     currentPlayer.myTurn.Value = true;
 
                     while (currentPlayer.myTurn.Value)
@@ -226,13 +248,18 @@ public class GameManager : NetworkBehaviour
                         yield return null;
                     }
 
+                    foreach (var player in players)
+                    {
+                        player.UI.WaitingForChicagoUIRpc(false);
+                    }
+
                     if (j == 0)
                     {
-                        currentSuit = lastPlayedCard._suit;
+                        currentSuit.Value = (int)lastPlayedCard._suit;
                         cachedCardValue = lastPlayedCard.value == 1 ? 14 : lastPlayedCard.value;
                         currentTurnPlayerWinnerIndex = index;
                     }
-                    else if (lastPlayedCard._suit == currentSuit)
+                    else if ((int)lastPlayedCard._suit == currentSuit.Value)
                     {
                         int lastCardValue = lastPlayedCard.value == 1 ? 14 : lastPlayedCard.value;
                         if (lastCardValue > cachedCardValue)
@@ -264,6 +291,7 @@ public class GameManager : NetworkBehaviour
             // Normal play, no chicago called
             yield return StartCoroutine(ShowAnnouncementText($"No CHICAGO was called.", 1.5f));
             var (cachedWinner, cachedWinnerHand) = GetWinner();
+            int finalTrickWinningCardValue = 0;
             for (int round = 0; round < 5; round++)
             {
                 int cachedCardValue = 0;
@@ -274,6 +302,18 @@ public class GameManager : NetworkBehaviour
                     int index = (startingIndex + j) % turnOrder.Count;
                     PlayerScript currentPlayer = turnOrder[index];
 
+                    // Check playable cards, skip first player as that player controls the cards
+                    if (j != 0)
+                    {
+                        currentPlayer.CheckPlayableCardsRpc(currentSuit.Value);
+                    }
+
+                    foreach (var player in players)
+                    {
+                        if (player == currentPlayer) continue;
+                        player.UI.WaitingForChicagoUIRpc(true);
+                    }
+
                     currentPlayer.myTurn.Value = true;
 
                     while (currentPlayer.myTurn.Value)
@@ -281,20 +321,37 @@ public class GameManager : NetworkBehaviour
                         yield return null;
                     }
 
+                    foreach (var player in players)
+                    {
+                        player.UI.WaitingForChicagoUIRpc(false);
+                    }
+
                     if (j == 0)
                     {
-                        currentSuit = lastPlayedCard._suit;
+                        currentSuit.Value = (int)lastPlayedCard._suit;
                         cachedCardValue = lastPlayedCard.value == 1 ? 14 : lastPlayedCard.value;
                         currentTurnPlayerWinnerIndex = index;
+
+                        if (round == 4)
+                        {
+                            finalTrickWinningCardValue = lastPlayedCard.value;
+                        }
                     }
-                    else if (lastPlayedCard._suit == currentSuit)
+                    else if ((int)lastPlayedCard._suit == currentSuit.Value)
                     {
                         int lastCardValue = lastPlayedCard.value == 1 ? 14 : lastPlayedCard.value;
                         if (lastCardValue > cachedCardValue)
                         {
                             cachedCardValue = lastCardValue;
                             currentTurnPlayerWinnerIndex = index;
+
+                            if (round == 4)
+                            {
+                                finalTrickWinningCardValue = lastCardValue;
+                            }
                         }
+
+
                     }
                 }
 
@@ -306,12 +363,24 @@ public class GameManager : NetworkBehaviour
                     yield return StartCoroutine(ShowAnnouncementText($"Seat {winner.profile.SeatId.Value} won the round, and gets {GameRules.roundWin_Points} points.", 3f));
                     winner.points.Value += GameRules.roundWin_Points;
 
+                    if (finalTrickWinningCardValue == 2)
+                    {
+                        yield return StartCoroutine(ShowAnnouncementText($"Seat {winner.profile.SeatId.Value} ended the round with a TWO, and gets additional {GameRules.roundWin_Points} points.", 3f));
+                        winner.points.Value += GameRules.roundWin_Points;
+                    }
+
                     if (cachedWinner != null)
                     {
                         yield return StartCoroutine(ShowAnnouncementText($"Seat {cachedWinner.profile.SeatId.Value} has {cachedWinnerHand} and gets {GameRules.handPoints[cachedWinnerHand]} points.", 3f));
 
                         cachedWinner.points.Value += GameRules.handPoints[cachedWinnerHand];
+                        cachedWinner.chicagosWon.Value++;
                     }
+                    
+                    /*if (cachedWinnerHand)
+                    {
+
+                    }*/
 
                     while (showingAnnouncement)
                     {
@@ -399,6 +468,7 @@ public class GameManager : NetworkBehaviour
         {
             player.calledChicago.Value = false;
             player.hasAnsweredChicago.Value = false;
+            player.DiscardAllCardsRpc();
         }
 
         yield return StartCoroutine(ShowAnnouncementText($"New Round!", 1f));
@@ -452,6 +522,8 @@ public class GameManager : NetworkBehaviour
             Resources.Load<Texture2D>("MyCards/Cards/" + (Suit)suit + value);
 
         cardsOnTable.Add(cardUI);
+
+        PlayerSound.instance.PlayPlaceCard();
     }
 
     [Rpc(SendTo.Everyone)]
