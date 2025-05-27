@@ -122,6 +122,8 @@ public class PlayerScript : NetworkBehaviour
         DiscardCards();
         EndTurnRpc();
         UpdateCardAmountForUI();
+        endTurnButton.gameObject.SetActive(false);
+        
     }
 
     void StartGame()
@@ -142,11 +144,10 @@ public class PlayerScript : NetworkBehaviour
     {
         selectedCards.Clear();
 
-        UI.WaitingForChicagoUIRpc(false);
-
         if (newValue && roundType == RoundType.DiscardingCards)
         {
             //discardCardButton.gameObject.SetActive(true);
+            UI.WaitingForChicagoUIRpc(false);
             endTurnButton.gameObject.SetActive(true);
             endTurnButton.GetComponentInChildren<TextMeshProUGUI>().SetText("Done");
             UI.chooseCardsUI.SetActive(true);
@@ -154,6 +155,7 @@ public class PlayerScript : NetworkBehaviour
         else if(newValue && roundType == RoundType.Game)
         {
             //AddSelectedCardToMiddle.gameObject.SetActive(true);
+            UI.WaitingForChicagoUIRpc(false);
             endTurnButton.gameObject.SetActive(true);
             endTurnButton.GetComponentInChildren<TextMeshProUGUI>().SetText("Play Card");
             UI.yourTurnUI.SetActive(true);
@@ -162,22 +164,32 @@ public class PlayerScript : NetworkBehaviour
         }
         else
         {
+            //endTurnButton.GetComponent<Button>().enabled = false;
             //AddSelectedCardToMiddle.gameObject.SetActive(false);
 
             //discardCardButton.gameObject.SetActive(false);
-            //endTurnButton.gameObject.SetActive(false);
+            //UI.WaitingForChicagoUIRpc(true);
+            endTurnButton.gameObject.SetActive(false);
         }
     }
     void EndTurn()
     {
+        if (PlayerSound.instance != null)
+        {
+            PlayerSound.instance.PlayButton();
+        }
+
         UI.yourTurnUI.SetActive(false);
         UI.WaitingForChicagoUIRpc(true);
+
         if (roundType == RoundType.Game)
         {
             AddCardToMiddle();
         }
         else
         {
+            
+            endTurnButton.gameObject.SetActive(false);
             UI.chooseCardsUI.SetActive(false);
             DiscardCards();
             EndTurnRpc();
@@ -288,6 +300,10 @@ public class PlayerScript : NetworkBehaviour
         hand.AddRange(tempHand);
 
         UpdateCardPosRpc();
+        if (PlayerSound.instance != null)
+        {
+            PlayerSound.instance.PlayGetCards();
+        }
 
     }
 
@@ -436,7 +452,7 @@ public class PlayerScript : NetworkBehaviour
     {
         selectedCards.Remove(value);
 
-        if (roundType == RoundType.DiscardingCards && selectedCards.Count < 0)
+        if (roundType == RoundType.DiscardingCards && selectedCards.Count <= 0)
         {
             endTurnButton.GetComponentInChildren<TextMeshProUGUI>().SetText("Done");
         }
@@ -471,5 +487,44 @@ public class PlayerScript : NetworkBehaviour
     void UpdateCardAmountForUI()
     {
         handAmount.Value = hand.Count;
+    }
+
+    public string GetName()
+    {
+        if (SteamClient.IsValid)
+        {
+            return steamName.Value.ToString();
+        }
+        else
+        {
+            return $"Seat {profile.SeatId.Value}";
+        }
+    }
+
+    [Rpc(SendTo.Owner)]
+    public void PlayNoChicagoSoundRpc()
+    {
+        if (PlayerSound.instance != null)
+        {
+            PlayerSound.instance.PlayNoChicago();
+        }
+    }
+
+    [Rpc(SendTo.Owner)]
+    public void PlayWinChicagoSoundRpc()
+    {
+        if (PlayerSound.instance != null)
+        {
+            PlayerSound.instance.PlayWinChicago();
+        }
+    }
+
+    [Rpc(SendTo.Owner)]
+    public void PlayLoseChicagoSoundRpc()
+    {
+        if (PlayerSound.instance != null)
+        {
+            PlayerSound.instance.PlayLoseChicago();
+        }
     }
 }

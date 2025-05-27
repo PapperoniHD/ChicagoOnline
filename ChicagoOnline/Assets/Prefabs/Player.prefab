@@ -4782,6 +4782,11 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 5edde86762ee4fc49a5c86c0bb6a3e20, type: 3}
   placeCardClips:
   - {fileID: 8300000, guid: 0eb8a420c9cee5448a45e1b972cf02c6, type: 3}
+  getCardsClip: {fileID: 8300000, guid: 15597eb799b36d14daf026abdc487d54, type: 3}
+  buttonClip: {fileID: 8300000, guid: 0ecfa150963e4e843b5d165aca02c234, type: 3}
+  noChicago: {fileID: 8300000, guid: cf9de47543470be4f989fc8e69c9d8c8, type: 3}
+  loseChicago: {fileID: 8300000, guid: e44162b2afd1ba24e9bfc54c895a9377, type: 3}
+  winChicago: {fileID: 8300000, guid: cb26005b5ff831f4cbb07cf32c4216f9, type: 3}
 --- !u!1 &8694075679047538128
 GameObject:
   m_ObjectHideFlags: 0

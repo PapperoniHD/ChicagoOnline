@@ -10,7 +10,11 @@ public class PlayerSound : NetworkBehaviour
     [SerializeField] private AudioSource source;
     [SerializeField] private AudioClip[] hoverCardClips;
     [SerializeField] private AudioClip[] placeCardClips;
-
+    [SerializeField] private AudioClip getCardsClip;
+    [SerializeField] private AudioClip buttonClip;
+    [SerializeField] private AudioClip noChicago;
+    [SerializeField] private AudioClip loseChicago;
+    [SerializeField] private AudioClip winChicago;
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
@@ -38,5 +42,31 @@ public class PlayerSound : NetworkBehaviour
 
         source.PlayOneShot(placeCardClips[random]);
     }
+
+    public void PlayButton()
+    {
+        source.PlayOneShot(buttonClip);
+    }
+
+    public void PlayGetCards()
+    {
+        source.PlayOneShot(getCardsClip);
+    }
+
+    public void PlayNoChicago()
+    {
+        source.PlayOneShot(noChicago);
+    }
+
+    public void PlayWinChicago()
+    {
+        source.PlayOneShot(winChicago);
+    }
+
+    public void PlayLoseChicago()
+    {
+        source.PlayOneShot(loseChicago);
+    }
+
 }
 

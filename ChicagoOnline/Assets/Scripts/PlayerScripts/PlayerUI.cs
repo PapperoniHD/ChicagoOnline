@@ -92,6 +92,7 @@ public class PlayerUI : NetworkBehaviour
     [Rpc(SendTo.Owner)]
     public void ExplosiveTextRpc(string text)
     {
+        waitingUI.SetActive(false);
         explosiveText.SetText(text);
         explosiveText.GetComponent<Animator>().Play("Explode", -1, 0f);
     }
@@ -99,6 +100,7 @@ public class PlayerUI : NetworkBehaviour
     [Rpc(SendTo.Owner)]
     public void AnnouncementTextRpc(string text)
     {
+        waitingUI.SetActive(false);
         explosiveText.SetText(text);
         explosiveText.GetComponent<Animator>().Play("ShowText", -1, 0f);
     }

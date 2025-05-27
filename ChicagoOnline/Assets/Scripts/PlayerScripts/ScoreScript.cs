@@ -50,10 +50,12 @@ public class ScoreScript : MonoBehaviour
         var img = await SteamFriends.GetLargeAvatarAsync(steamId);
         if (img.HasValue)
         {
+            avatarImage.enabled = true;
             avatarImage.texture = GetTextureFromImage(img.Value);
         }
         else
         {
+            avatarImage.enabled = false;
             Debug.Log($"Failed to get avatar");
         }
         

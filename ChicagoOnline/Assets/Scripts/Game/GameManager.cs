@@ -211,7 +211,7 @@ public class GameManager : NetworkBehaviour
                 background.ChangeToChicagoRpc();
                 someoneCalledChicago = true;
                 chicagoPlayer = currentPlayer;
-                yield return StartCoroutine(ShowAnnouncementText($"Seat {currentPlayer.profile.SeatId.Value} called CHICAGO!", 2f));
+                yield return StartCoroutine(ShowAnnouncementText($"{currentPlayer.GetName()} called CHICAGO!", 2f));
                 yield return new WaitForSeconds(0.5f);
                 break;
             }
@@ -273,7 +273,8 @@ public class GameManager : NetworkBehaviour
                 // Check if someone beat the chicagoPlayer
                 if (turnOrder[currentTurnPlayerWinnerIndex] != chicagoPlayer)
                 {
-                    yield return StartCoroutine(ShowAnnouncementText($"Seat {turnOrder[currentTurnPlayerWinnerIndex].profile.SeatId.Value} broke the CHICAGO! Seat {chicagoPlayer.profile.SeatId.Value} loses 15 points.", 3f));
+                    PlayLoseSound();
+                    yield return StartCoroutine(ShowAnnouncementText($"{turnOrder[currentTurnPlayerWinnerIndex].GetName()} broke the CHICAGO! Seat {chicagoPlayer.profile.SeatId.Value} loses 15 points.", 3f));             
                     chicagoPlayer.points.Value -= GameRules.ChicagoPoints;
                     yield break;
                 }
@@ -283,13 +284,15 @@ public class GameManager : NetworkBehaviour
             }
 
             // If all 5 tricks are won by chicagoPlayer
-            yield return StartCoroutine(ShowAnnouncementText($"Seat {chicagoPlayer.profile.SeatId.Value} successfully completed CHICAGO and gets 15 points!", 3f));
+            PlayWinSound();
+            yield return StartCoroutine(ShowAnnouncementText($"{chicagoPlayer.GetName()} successfully completed CHICAGO and gets 15 points!", 3f));
             chicagoPlayer.points.Value += GameRules.ChicagoPoints;
         }
         else
         {
             // Normal play, no chicago called
-            yield return StartCoroutine(ShowAnnouncementText($"No CHICAGO was called.", 1.5f));
+            PlayNoChicagoSound();
+            yield return StartCoroutine(ShowAnnouncementText($"No CHICAGO was called.", 1.5f)); 
             var (cachedWinner, cachedWinnerHand) = GetWinner();
             int finalTrickWinningCardValue = 0;
             for (int round = 0; round < 5; round++)
@@ -359,19 +362,21 @@ public class GameManager : NetworkBehaviour
                 if (round == 4)
                 {
                     PlayerScript winner = turnOrder[currentTurnPlayerWinnerIndex];
-
-                    yield return StartCoroutine(ShowAnnouncementText($"Seat {winner.profile.SeatId.Value} won the round, and gets {GameRules.roundWin_Points} points.", 3f));
+                    PlayNoChicagoSound();
+                    yield return StartCoroutine(ShowAnnouncementText($"{winner.GetName()} won the round, and gets {GameRules.roundWin_Points} points.", 3f));
                     winner.points.Value += GameRules.roundWin_Points;
 
                     if (finalTrickWinningCardValue == 2)
                     {
-                        yield return StartCoroutine(ShowAnnouncementText($"Seat {winner.profile.SeatId.Value} ended the round with a TWO, and gets additional {GameRules.roundWin_Points} points.", 3f));
+                        PlayNoChicagoSound();
+                        yield return StartCoroutine(ShowAnnouncementText($"{winner.GetName()} ended the round with a TWO, and gets additional {GameRules.roundWin_Points} points.", 3f));
                         winner.points.Value += GameRules.roundWin_Points;
                     }
 
                     if (cachedWinner != null)
                     {
-                        yield return StartCoroutine(ShowAnnouncementText($"Seat {cachedWinner.profile.SeatId.Value} has {cachedWinnerHand} and gets {GameRules.handPoints[cachedWinnerHand]} points.", 3f));
+                        PlayNoChicagoSound();
+                        yield return StartCoroutine(ShowAnnouncementText($"{cachedWinner.GetName()} has {cachedWinnerHand} and gets {GameRules.handPoints[cachedWinnerHand]} points.", 3f));
 
                         cachedWinner.points.Value += GameRules.handPoints[cachedWinnerHand];
                         cachedWinner.chicagosWon.Value++;
@@ -420,7 +425,7 @@ public class GameManager : NetworkBehaviour
         {
             print("Try send explosive text");
 
-            yield return StartCoroutine(ShowAnnouncementText($"Seat {currentWinner.profile.SeatId.Value} has the highest {highestHand} and gets {GameRules.handPoints[highestHand]} points.", 3f));
+            yield return StartCoroutine(ShowAnnouncementText($"{currentWinner.GetName()} has the highest {highestHand} and gets {GameRules.handPoints[highestHand]} points.", 3f));
             //QueueAnnouncementText($"Seat {currentWinner.profile.SeatId.Value} has {highestHand} and gets {GameRules.handPoints[highestHand]} points", 3f);
 
             // Unused, wanted to do queues but was not really necessesary
@@ -560,14 +565,6 @@ public class GameManager : NetworkBehaviour
         Destroy(card.gameObject);
     }
 
-    void SendExplosiveTextToEveryone(string text)
-    {
-        foreach (var item in players)
-        {
-            item.GetComponentInChildren<PlayerUI>().ExplosiveTextRpc(text);        
-        }
-    }
-
     void QueueAnnouncementText(string text, float duration)
     {
         announcementQueue.Enqueue((text, duration));
@@ -619,6 +616,30 @@ public class GameManager : NetworkBehaviour
             item.GetComponentInChildren<PlayerUI>().HideTextRpc();
         }
         yield return new WaitForSeconds(1f);
+    }
+
+    void PlayWinSound()
+    {
+        foreach (var item in players)
+        {
+            item.PlayWinChicagoSoundRpc();
+        }
+    }
+
+    void PlayLoseSound()
+    {
+        foreach (var item in players)
+        {
+            item.PlayLoseChicagoSoundRpc();
+        }
+    }
+
+    void PlayNoChicagoSound()
+    {
+        foreach (var item in players)
+        {
+            item.PlayNoChicagoSoundRpc();
+        }
     }
 
     private bool AllPlayersBelowMaxScore(int maxScore = 52)

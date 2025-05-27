@@ -66,6 +66,11 @@ public class CardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, 
         if (!canSelect) return;
         if (!playerScript.myTurn.Value) return;
 
+        if (PlayerSound.instance != null)
+        {
+            PlayerSound.instance.PlayHoverCard();
+        }
+
         selected = !selected;
 
         SelectCard(selected);
@@ -73,13 +78,12 @@ public class CardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, 
 
     public void OnPointerEnter(PointerEventData eventData)
     {
+       
+        if (!canSelect) return;
         if (PlayerSound.instance != null)
         {
             PlayerSound.instance.PlayHoverCard();
         }
-        
-
-        if (!canSelect) return;
         hover = true;
         
         if (!selected)
@@ -94,6 +98,10 @@ public class CardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, 
     public void OnPointerExit(PointerEventData eventData)
     {
         if (!canSelect) return;
+        if (PlayerSound.instance != null)
+        {
+            PlayerSound.instance.PlayHoverCard();
+        }
         hover = false;
         if (!selected)
         {
