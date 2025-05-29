@@ -1247,6 +1247,7 @@ MonoBehaviour:
   - {fileID: 4609698286578265913}
   - {fileID: 6679662409470359963}
   - {fileID: 3007494904973910837}
+  chicagoText: {fileID: 1633559661576303036}
 --- !u!95 &7961601931609149778
 Animator:
   serializedVersion: 5

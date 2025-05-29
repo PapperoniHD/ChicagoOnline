@@ -833,16 +833,16 @@ RectTransform:
   m_GameObject: {fileID: 1909919944843580611}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 0.8, y: 0.8, z: 0.8}
+  m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 3174805472511155331}
   m_Father: {fileID: 953960011351045762}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: -112, y: 0}
-  m_SizeDelta: {x: 100, y: 100}
+  m_AnchoredPosition: {x: -100, y: 0}
+  m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &5172049706451703297
 MonoBehaviour:
@@ -1329,17 +1329,71 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   profile: {fileID: 305763622458744499}
   UI: {fileID: 6831512517831390992}
-  randomCardButton: {fileID: 6478513952513295623}
   discardCardButton: {fileID: 122915244633511163}
   sortButton: {fileID: 9203900920096325617}
   endTurnButton: {fileID: 4174735302675373530}
   startButton: {fileID: 4104797992030304586}
-  AddSelectedCardToMiddle: {fileID: 963167768757148499}
-  hand: []
-  selectedCards: 
-  cardsUI: []
   cardPrefab: {fileID: 5434054966456394227, guid: 515f044883699ff47b520fabb1f248e3, type: 3}
   cardPos: {fileID: 1249640978238030457}
+  hand: []
+  lastPlayedCard:
+    value: 0
+    _suit: 0
+  selectedCards: 
+  cardsUI: []
+  calledChicago:
+    m_InternalValue: 0
+  hasAnsweredChicago:
+    m_InternalValue: 0
+  myTurn:
+    m_InternalValue: 0
+  points:
+    m_InternalValue: 0
+  isDealer:
+    m_InternalValue: 0
+  handAmount:
+    m_InternalValue: 0
+  chicagosWon:
+    m_InternalValue: 0
+--- !u!114 &6831512517831390992
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3442657722087532992}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e1653f761200d240beb8442d3a16a15, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playerCamera: {fileID: 4478244017670060577}
+  playerScript: {fileID: 4308882243400061250}
+  currentTurnText: {fileID: 596269930804319001}
+  explosiveText: {fileID: 2048581294155243869}
+  canvas: {fileID: 6329891257353589367}
+  scoreboard: {fileID: 0}
+  playerScorePrefab: {fileID: 5970286512145940846, guid: 3421ba8952f9459468f68bd0d1da88a3, type: 3}
+  localScoreText: {fileID: 8494630256573350226}
+  dealerButtonUI: {fileID: 6607341897121148800}
+  chicagoPromptUI: {fileID: 3213139325266525105}
+  waitingUI: {fileID: 1296239395898811120}
+  yourTurnUI: {fileID: 3649309800616992244}
+  chooseCardsUI: {fileID: 7280150683621548559}
+  scoreList: []
+  seatContainers: []
+--- !u!114 &305763622458744499
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3442657722087532992}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e1562be3fb621049936626b560ef225, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
   steamId:
     m_InternalValue: 0
   steamName:
@@ -1479,70 +1533,14 @@ MonoBehaviour:
         byte0123: 0
         byte0124: 0
         byte0125: 0
-  calledChicago:
-    m_InternalValue: 0
-  hasAnsweredChicago:
-    m_InternalValue: 0
-  myTurn:
-    m_InternalValue: 0
-  points:
-    m_InternalValue: 0
-  isDealer:
-    m_InternalValue: 0
-  handAmount:
-    m_InternalValue: 0
-  chicagosWon:
-    m_InternalValue: 0
-  lastPlayedCard:
-    value: 0
-    _suit: 0
---- !u!114 &6831512517831390992
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3442657722087532992}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7e1653f761200d240beb8442d3a16a15, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  playerCamera: {fileID: 4478244017670060577}
-  playerScript: {fileID: 4308882243400061250}
-  currentTurnText: {fileID: 596269930804319001}
-  explosiveText: {fileID: 2048581294155243869}
-  canvas: {fileID: 6329891257353589367}
-  scoreboard: {fileID: 0}
-  playerScorePrefab: {fileID: 5970286512145940846, guid: 3421ba8952f9459468f68bd0d1da88a3, type: 3}
-  localScoreText: {fileID: 8494630256573350226}
-  dealerButtonUI: {fileID: 6607341897121148800}
-  chicagoPromptUI: {fileID: 3213139325266525105}
-  waitingUI: {fileID: 1296239395898811120}
-  yourTurnUI: {fileID: 3649309800616992244}
-  chooseCardsUI: {fileID: 7280150683621548559}
-  scoreList: []
-  seatContainers: []
---- !u!114 &305763622458744499
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3442657722087532992}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7e1562be3fb621049936626b560ef225, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
   SeatId:
     m_InternalValue: -1
   seatsCanvas: {fileID: 6329891257353589367}
   seatContainers:
   - {fileID: 1106686969468482064}
-  - {fileID: 5558038040380166818}
-  - {fileID: 8886118923315927642}
   - {fileID: 8133351868218220965}
+  - {fileID: 8886118923315927642}
+  - {fileID: 5558038040380166818}
   profileUIPrefab: {fileID: 8198763471519337584, guid: 29a7b6db880f0f7448908a1a175e7061, type: 3}
   myCardPlacement: {fileID: 6873639680802702007}
 --- !u!1 &3649309800616992244
@@ -2051,7 +2049,7 @@ RectTransform:
   m_GameObject: {fileID: 4115598748011986853}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.8, y: 0.8, z: 0.8}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 5881763902611626594}
@@ -2344,7 +2342,7 @@ MonoBehaviour:
   m_fontSizeMax: 72
   m_fontStyle: 0
   m_HorizontalAlignment: 1
-  m_VerticalAlignment: 256
+  m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
   m_wordSpacing: 0
@@ -3088,7 +3086,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6607341897121148800}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -350.96637}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1.2331125, y: 1.2331125, z: 1.2331125}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3127,7 +3125,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Dealer
+  m_text: You're the dealer!
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 3614a0c6253f5d24189198a81867e6d0, type: 2}
   m_sharedMaterial: {fileID: 7166745707263150269, guid: 3614a0c6253f5d24189198a81867e6d0, type: 2}
@@ -3154,12 +3152,12 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 30.35
+  m_fontSize: 11.6
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
   m_fontSizeMin: 1
-  m_fontSizeMax: 69.9
+  m_fontSizeMax: 11.6
   m_fontStyle: 0
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
@@ -3190,7 +3188,7 @@ MonoBehaviour:
   m_VertexBufferAutoSizeReduction: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: -0.6679001, y: 11.628734, z: -51.87002, w: 0.42726135}
+  m_margin: {x: -16.803345, y: 11.628734, z: -65.70039, w: 0.42726135}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   m_hasFontAssetChanged: 0
@@ -3208,9 +3206,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 42527b0684b0d5b409c147c5e6b8d977, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  waveHeight: 2.64
-  waveSpeed: 1.8
-  waveFrequency: 2
+  waveHeight: 2.68
+  waveSpeed: 1.48
+  waveFrequency: 6.74
 --- !u!1 &6804071393964358094
 GameObject:
   m_ObjectHideFlags: 0
@@ -3237,7 +3235,7 @@ RectTransform:
   m_GameObject: {fileID: 6804071393964358094}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.8, y: 0.8, z: 0.8}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 7086959350717373272}
@@ -3245,7 +3243,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: -49.929993}
+  m_AnchoredPosition: {x: 0, y: -70}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &4486725388610987302
@@ -4777,16 +4775,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0c4bed9336ad1ac4da334d8833eecfdd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  source: {fileID: 6373850837561336299}
-  hoverCardClips:
-  - {fileID: 8300000, guid: 5edde86762ee4fc49a5c86c0bb6a3e20, type: 3}
-  placeCardClips:
-  - {fileID: 8300000, guid: 0eb8a420c9cee5448a45e1b972cf02c6, type: 3}
-  getCardsClip: {fileID: 8300000, guid: 15597eb799b36d14daf026abdc487d54, type: 3}
-  buttonClip: {fileID: 8300000, guid: 0ecfa150963e4e843b5d165aca02c234, type: 3}
-  noChicago: {fileID: 8300000, guid: cf9de47543470be4f989fc8e69c9d8c8, type: 3}
-  loseChicago: {fileID: 8300000, guid: e44162b2afd1ba24e9bfc54c895a9377, type: 3}
-  winChicago: {fileID: 8300000, guid: cb26005b5ff831f4cbb07cf32c4216f9, type: 3}
 --- !u!1 &8694075679047538128
 GameObject:
   m_ObjectHideFlags: 0

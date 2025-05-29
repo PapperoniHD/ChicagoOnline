@@ -19,10 +19,9 @@ public class ScoreScript : MonoBehaviour
 
     public Transform cardPlacement;
     public GameObject dealerButton;
-
     public RawImage avatarImage;
-
     public GameObject[] cards_UI;
+    public TextMeshProUGUI chicagoText;
 
     public void InitializeScore(PlayerScript playerscript, int playerIndex, int seatId)
     {
@@ -30,19 +29,26 @@ public class ScoreScript : MonoBehaviour
         playerscript.points.OnValueChanged += UpdateScore;
         playerscript.isDealer.OnValueChanged += UpdateDealer;
         playerscript.handAmount.OnValueChanged += UpdateCardsUI;
+        playerscript.chicagosWon.OnValueChanged += UpdateChicagoText;
+        targetProfile = playerscript.profile;
 
-        if (!SteamClient.IsValid)
+        // Still set name before changing to steam info, in case steam info fails.
+        playerName_Text.text = "Seat " + (playerIndex);
+
+        if (SteamClient.IsValid)
         {
-            playerName_Text.text = "Seat " + (playerIndex);
-        }
-        else
-        {
-            SetSteamProfile(playerscript.steamId.Value, playerscript.steamName.Value.ToString());
-        }
-              
+            StartCoroutine(AwaitSteamData());
+        }         
     }
 
-    
+    private IEnumerator AwaitSteamData()
+    {
+        while (targetProfile != null && (targetProfile.steamId.Value == 0 || string.IsNullOrEmpty(targetProfile.steamName.Value.ToString())))
+        {
+            yield return null;
+        }
+        SetSteamProfile(targetProfile.steamId.Value, targetProfile.steamName.Value.ToString());
+    }
 
     async void SetSteamProfile(ulong steamId, string steamName)
     {
@@ -100,8 +106,11 @@ public class ScoreScript : MonoBehaviour
             {
                 cards_UI[i].SetActive(true);
             }
-
         }
     }
 
+    private void UpdateChicagoText(int previousValue, int newValue)
+    {
+        chicagoText.SetText($"Chicagos: {newValue}");
+    }
 }

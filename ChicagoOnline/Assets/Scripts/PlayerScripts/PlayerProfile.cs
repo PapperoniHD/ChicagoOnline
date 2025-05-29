@@ -1,29 +1,31 @@
-﻿using System;
+﻿using Steamworks;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
 public class PlayerProfile : NetworkBehaviour
 {
-    // events for registry
+    // For steam
+    public NetworkVariable<ulong> steamId = new(writePerm: NetworkVariableWritePermission.Server);
+    public NetworkVariable<FixedString128Bytes> steamName = new(writePerm: NetworkVariableWritePermission.Server);
+
+    // Events for registry
     public static event Action<PlayerProfile> OnProfileSpawned;
     public static event Action<PlayerProfile> OnProfileDespawned;
 
-    // --- networked seat ID ---
-    //public NetworkVariable<int> SeatId = new(-1);
+    // Networked seat ID 
     public NetworkVariable<int> SeatId = new(-1);
 
-    [Header("UI (prefab‐child)")]
-    [Tooltip("Disable this canvas on non‐owner")]
+    [Header("UI")]
     public GameObject seatsCanvas;
-    [Tooltip("0 = self(bottom), 1 = right, 2 = top, 3 = left")]
     public RectTransform[] seatContainers;
-    [Tooltip("Small UI prefab showing avatar/profile (Image+Name)")]
     public GameObject profileUIPrefab;
 
-    // track spawned UI instances (keyed by clientId)
+    // UI instances, keyed by ClientID
     private Dictionary<ulong, RectTransform> spawnedUI = new Dictionary<ulong, RectTransform>();
     [SerializeField] Transform myCardPlacement;
 
@@ -33,8 +35,10 @@ public class PlayerProfile : NetworkBehaviour
         OnProfileSpawned?.Invoke(this);
 
         if (IsServer)
-            SeatId.Value = GameManager.GM.AssignSeatId(OwnerClientId);
-
+        {
+            SeatId.Value = GameManager.GM.AssignSeatId();
+        }
+            
         if (!IsOwner)
         {
             seatsCanvas.SetActive(false);
@@ -47,7 +51,11 @@ public class PlayerProfile : NetworkBehaviour
             OnSeatIdAssigned(-1, SeatId.Value);
         }
 
-        
+        if (IsOwner && SteamClient.IsValid)
+        {
+            SubmitSteamDataServerRpc(SteamClient.SteamId, SteamClient.Name);
+        }
+
     }
 
     public override void OnNetworkDespawn()
@@ -56,6 +64,13 @@ public class PlayerProfile : NetworkBehaviour
 
         GameUI.Instance.UnregisterPlayer(this);
         SeatId.OnValueChanged -= OnSeatIdAssigned;
+    }
+
+    [Rpc(SendTo.Server)]
+    private void SubmitSteamDataServerRpc(ulong id, string name)
+    {
+        steamId.Value = id;
+        steamName.Value = new FixedString128Bytes(name);
     }
 
     private void OnSeatIdAssigned(int previousValue, int newValue)
@@ -144,7 +159,6 @@ public class PlayerProfile : NetworkBehaviour
 
     private void TryUpdateLayout()
     {
-        // Only re-layout if we have UI entries for all other players
         if (GameUI.Instance.AllProfiles
             .Where(p => p != this)
             .All(p => spawnedUI.ContainsKey(p.OwnerClientId)))
@@ -189,7 +203,6 @@ public class PlayerProfile : NetworkBehaviour
         }
     }
 
-
     public Transform GetCardSpawn(int seatId)
     {
         if (seatId == this.SeatId.Value)
@@ -218,6 +231,18 @@ public class PlayerProfile : NetworkBehaviour
             }
         }
         return null;
+    }
+
+    public string GetName()
+    {
+        if (SteamClient.IsValid)
+        {
+            return steamName.Value.ToString();
+        }
+        else
+        {
+            return $"Seat {SeatId.Value}";
+        }
     }
 
 }

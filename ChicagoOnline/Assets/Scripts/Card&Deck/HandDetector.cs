@@ -58,25 +58,25 @@ public class HandDetector : MonoBehaviour
     
     private bool CheckPair(List<Card> cards)
     {
-        //See if there are 2 of the same valued cards
+        // See if there are 2 of the same valued cards
         return cards.GroupBy(card => card.value).Count(group => group.Count() == 2) == 1;
     }
 
     private bool CheckTwoPair(List<Card> cards)
     {
-        //see if there are 2 lots of exactly 2 cards card the same rank.
+        // see if there are 2 lots of exactly 2 cards card the same rank.
         return cards.GroupBy(card => card.value).Count(group => group.Count() >= 2) == 2;
     }
 
     private bool CheckTrips(List<Card> cards)
     {
-        //see if exactly 3 cards card the same rank.
+        // see if exactly 3 cards card the same rank.
         return cards.GroupBy(card => card.value).Any(group => group.Count() == 3);
     }
 
     private bool CheckFlush(List<Card> cards)
     {
-        //see if 5 or more cards card the same rank.
+        // see if 5 or more cards card the same rank.
         return cards.GroupBy(card => card._suit).Count(group => group.Count() >= 5) == 1;
     }
 
@@ -93,7 +93,7 @@ public class HandDetector : MonoBehaviour
 
     private bool CheckQuads(List<Card> cards)
     {
-        //see if exactly 4 cards card the same rank.
+        // see if exactly 4 cards card the same rank.
         return cards.GroupBy(card => card.value).Any(group => group.Count() == 4);
     }
 

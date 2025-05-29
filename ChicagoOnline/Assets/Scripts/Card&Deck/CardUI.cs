@@ -6,34 +6,26 @@ using UnityEngine.UI;
 
 public class CardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
-    [SerializeField]
-    private float cardPosOffsetX = 60;
-
+    [SerializeField] private float cardPosOffsetX = 60;
     public int cardIndex;
-
     RectTransform rect;
-
     private float selectedTargetYPos;
     private float idleYPos;
     private float targetXPos;
     private float targetYPos;
 
     private bool canSelect = true;
-    private bool hover;
     public bool selected;
-
-    public PlayerScript playerScript;
     private int childIndex = 0;
 
+    [Header("References")]
+    public PlayerScript playerScript;
     [SerializeField] Outline _outline;
 
-    
-    // Start is called before the first frame update
     void Start()
     {
         rect = GetComponent<RectTransform>();
         idleYPos = rect.localPosition.y;
-        //targetXPos = rect.position.x;
         selectedTargetYPos = idleYPos + 100;
 
         if (playerScript)
@@ -42,8 +34,6 @@ public class CardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, 
         }
         childIndex = transform.GetSiblingIndex();
     }
-
-    // Update is called once per frame
     void Update()
     {
         Vector3 targetPos = new(targetXPos, targetYPos);
@@ -66,9 +56,9 @@ public class CardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, 
         if (!canSelect) return;
         if (!playerScript.myTurn.Value) return;
 
-        if (PlayerSound.instance != null)
+        if (AudioManager.instance != null)
         {
-            PlayerSound.instance.PlayHoverCard();
+            AudioManager.instance.PlaySelectCard();
         }
 
         selected = !selected;
@@ -78,13 +68,12 @@ public class CardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, 
 
     public void OnPointerEnter(PointerEventData eventData)
     {
-       
         if (!canSelect) return;
-        if (PlayerSound.instance != null)
+
+        if (AudioManager.instance != null)
         {
-            PlayerSound.instance.PlayHoverCard();
+            AudioManager.instance.PlayHoverCard();
         }
-        hover = true;
         
         if (!selected)
         {
@@ -98,11 +87,11 @@ public class CardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, 
     public void OnPointerExit(PointerEventData eventData)
     {
         if (!canSelect) return;
-        if (PlayerSound.instance != null)
+
+        if (AudioManager.instance != null)
         {
-            PlayerSound.instance.PlayHoverCard();
+            AudioManager.instance.PlayHoverCard();
         }
-        hover = false;
         if (!selected)
         {
             targetYPos = 0f;

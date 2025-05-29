@@ -53,7 +53,6 @@ public class GameUI : NetworkBehaviour
         {
             Debug.Log($"[GameUI] Registering (seed/spawn) player {player.OwnerClientId}");
             AllProfiles.Add(player);
-            //AllProfilesDict.Add(OwnerClientId, player);
             OnPlayerJoined?.Invoke(player);
         }
 
@@ -62,9 +61,6 @@ public class GameUI : NetworkBehaviour
             LocalProfile = player;
         }
     }
-
-    
-
     public void UnregisterPlayer(PlayerProfile player)
     {
         if (AllProfiles.Remove(player))
@@ -72,7 +68,6 @@ public class GameUI : NetworkBehaviour
             Debug.Log($"[GameUI] Unregistering player {player.OwnerClientId}");
             OnPlayerLeft?.Invoke(player);
         }
-        //AllProfilesDict.Remove(OwnerClientId);
     }
 
     public Transform GetCardParent(int seatId)

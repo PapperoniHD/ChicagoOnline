@@ -19,44 +19,23 @@ public class PlayerScript : NetworkBehaviour
     public PlayerProfile profile;
     public PlayerUI UI;
 
-    [SerializeField]
-    private Button randomCardButton;
+    [Header("UI")]
+    [SerializeField] private Button discardCardButton;
+    [SerializeField] private Button sortButton;
+    [SerializeField] private Button endTurnButton;
+    [SerializeField] private Button startButton;
+    [SerializeField] private GameObject cardPrefab;
+    [SerializeField] private RectTransform cardPos;
 
-    [SerializeField]
-    private Button discardCardButton;
-
-    [SerializeField]
-    private Button sortButton;
-
-    [SerializeField]
-    private Button endTurnButton;
-
-    [SerializeField]
-    private Button startButton;
-
-    [SerializeField]
-    private Button AddSelectedCardToMiddle;
-
+    [Header("Card Data")]
     [SerializeField]
     private List<Card> hand;
+    public Card lastPlayedCard;
+    [SerializeField] private List<int> selectedCards;
+    [SerializeField] private List<GameObject> cardsUI;
 
-    [SerializeField]
-    private List<int> selectedCards;
-
-    [SerializeField]
-    private List<GameObject> cardsUI;
-
-    [SerializeField]
-    private GameObject cardPrefab;
-
-    [SerializeField]
-    private RectTransform cardPos;
-
-    // For steam
-    public NetworkVariable<ulong> steamId = new(writePerm: NetworkVariableWritePermission.Server);
-    public NetworkVariable<FixedString128Bytes> steamName = new(writePerm: NetworkVariableWritePermission.Server);
-
-
+    
+    [Header("Network Variables")]
     public NetworkVariable<bool> calledChicago = new NetworkVariable<bool>();
     public NetworkVariable<bool> hasAnsweredChicago = new NetworkVariable<bool>();
 
@@ -66,34 +45,18 @@ public class PlayerScript : NetworkBehaviour
     public NetworkVariable<int> handAmount = new(writePerm: NetworkVariableWritePermission.Owner, readPerm: NetworkVariableReadPermission.Everyone);
     public NetworkVariable<int> chicagosWon = new(0);
 
-    public Card lastPlayedCard;
-
-    public override void OnNetworkSpawn()
-    {
-        if (IsOwner && SteamClient.IsValid)
-        {
-            SubmitSteamDataServerRpc(SteamClient.SteamId, SteamClient.Name);
-        }
-    }
-
-    [Rpc(SendTo.Server)]
-    private void SubmitSteamDataServerRpc(ulong id, string name)
-    {
-        steamId.Value = id;
-        steamName.Value = new FixedString128Bytes(name);
-    }
-
     private void Start()
+    {
+        SetupButtons();
+    }
+
+    private void SetupButtons()
     {
         if (!IsLocalPlayer) return;
 
-        //randomCardButton.onClick.AddListener(AddRandomCard);
         discardCardButton.onClick.AddListener(DiscardCards);
         sortButton.onClick.AddListener(Check);
         endTurnButton.onClick.AddListener(EndTurn);
-
-        AddSelectedCardToMiddle.gameObject.SetActive(false);
-        AddSelectedCardToMiddle.onClick.AddListener(AddCardToMiddle);
 
         discardCardButton.gameObject.SetActive(false);
         endTurnButton.gameObject.SetActive(false);
@@ -146,7 +109,6 @@ public class PlayerScript : NetworkBehaviour
 
         if (newValue && roundType == RoundType.DiscardingCards)
         {
-            //discardCardButton.gameObject.SetActive(true);
             UI.WaitingForChicagoUIRpc(false);
             endTurnButton.gameObject.SetActive(true);
             endTurnButton.GetComponentInChildren<TextMeshProUGUI>().SetText("Done");
@@ -154,29 +116,22 @@ public class PlayerScript : NetworkBehaviour
         }
         else if(newValue && roundType == RoundType.Game)
         {
-            //AddSelectedCardToMiddle.gameObject.SetActive(true);
             UI.WaitingForChicagoUIRpc(false);
             endTurnButton.gameObject.SetActive(true);
             endTurnButton.GetComponentInChildren<TextMeshProUGUI>().SetText("Play Card");
             UI.yourTurnUI.SetActive(true);
 
-            //CheckPlayableCards();
         }
         else
         {
-            //endTurnButton.GetComponent<Button>().enabled = false;
-            //AddSelectedCardToMiddle.gameObject.SetActive(false);
-
-            //discardCardButton.gameObject.SetActive(false);
-            //UI.WaitingForChicagoUIRpc(true);
             endTurnButton.gameObject.SetActive(false);
         }
     }
     void EndTurn()
     {
-        if (PlayerSound.instance != null)
+        if (AudioManager.instance != null)
         {
-            PlayerSound.instance.PlayButton();
+            AudioManager.instance.PlayButton();
         }
 
         UI.yourTurnUI.SetActive(false);
@@ -252,7 +207,6 @@ public class PlayerScript : NetworkBehaviour
 
     void UpdateCardUI(Card card, int index)
     {
-       
         GameObject cardUI = Instantiate(cardPrefab, GetComponentInChildren<Canvas>().transform);
         cardUI.transform.parent = cardPos.transform;
 
@@ -265,8 +219,6 @@ public class PlayerScript : NetworkBehaviour
         cardUI.GetComponent<CardUI>().cardIndex = index;
 
         cardsUI.Add(cardUI);
-
-        //UpdateCardPos();
     }
 
     [Rpc(SendTo.Server)]
@@ -300,11 +252,6 @@ public class PlayerScript : NetworkBehaviour
         hand.AddRange(tempHand);
 
         UpdateCardPosRpc();
-        if (PlayerSound.instance != null)
-        {
-            PlayerSound.instance.PlayGetCards();
-        }
-
     }
 
     [Rpc(SendTo.Owner)]
@@ -315,11 +262,15 @@ public class PlayerScript : NetworkBehaviour
         Card card = new(value, suit);
         UpdateCardUI(card, index);
         hand.Add(card);
+
+        if (AudioManager.instance != null)
+        {
+            AudioManager.instance.PlayGetCards();
+        }
     }
 
     void DiscardCards()
     {
-
         if (IsServer)
         {
             DoDiscard(selectedCards.ToArray());
@@ -334,42 +285,35 @@ public class PlayerScript : NetworkBehaviour
     }
 
     [Rpc(SendTo.Server)]
-    void DiscardCardsServerRpc(int[] indices)
+    void DiscardCardsServerRpc(int[] selected)
     {
-        DoDiscard(indices);
+        DoDiscard(selected);
     }
 
-    void DoDiscard(int[] indices)
+    void DoDiscard(int[] selected)
     {
-        List<int> sortedIndices = new(indices);
-        sortedIndices.Sort();
-        sortedIndices.Reverse(); // descending
-
-        foreach (int i in sortedIndices)
-        {
-            if (i < hand.Count) hand.RemoveAt(i);
-            if (i < cardsUI.Count)
-            {
-                Destroy(cardsUI[i]);
-                cardsUI.RemoveAt(i);
-            }
-        }
+        Discard(selected);
 
         UpdateCardPosRpc();
-
-        DoDiscardClientRpc(indices);
+        DoDiscardClientRpc(selected);
     }
 
     [Rpc(SendTo.Owner)]
-    void DoDiscardClientRpc(int[] indices)
+    void DoDiscardClientRpc(int[] selected)
     {
         if (IsServer) return;
 
-        List<int> sortedIndices = new(indices);
-        sortedIndices.Sort();
-        sortedIndices.Reverse();
+        Discard(selected);   
+        UpdateCardPosRpc();
+    }
 
-        foreach (int i in sortedIndices)
+    private void Discard(int[] selected)
+    {
+        List<int> sortedSelected = new(selected);
+        sortedSelected.Sort();
+        sortedSelected.Reverse();
+
+        foreach (int i in sortedSelected)
         {
             if (i < hand.Count) hand.RemoveAt(i);
             if (i < cardsUI.Count)
@@ -378,9 +322,6 @@ public class PlayerScript : NetworkBehaviour
                 cardsUI.RemoveAt(i);
             }
         }
-
-        
-        UpdateCardPosRpc();
     }
 
     [Rpc(SendTo.Owner)]
@@ -405,25 +346,11 @@ public class PlayerScript : NetworkBehaviour
         selectedCards.Clear();
     }
 
-
-    /*  [Rpc(SendTo.Server)]
-      void DiscardCardsServerRpc(int index)
-      {
-          this.hand.RemoveAt(index);
-          if (cardsUI[index] != null) 
-          {
-              Destroy(cardsUI[index]);
-              cardsUI.RemoveAt(index);
-          }
-      }*/
-
     public void SelectCard(int value)
     {
         if (!myTurn.Value) return;
 
         // If round is game, clearing cards ensuring no previous cards are in the list
-
-
         if (roundType == RoundType.Game)
         {
             selectedCards.Clear();
@@ -448,6 +375,8 @@ public class PlayerScript : NetworkBehaviour
         }
     }
 
+    
+
     public void UnselectCard(int value)
     {
         selectedCards.Remove(value);
@@ -470,8 +399,6 @@ public class PlayerScript : NetworkBehaviour
         UpdateCardAmountForUI();
     }
 
-
-
     private RoundType roundType;
     [Rpc(SendTo.Owner)]
     public void SetRoundTypeRpc(RoundType roundType)
@@ -487,44 +414,5 @@ public class PlayerScript : NetworkBehaviour
     void UpdateCardAmountForUI()
     {
         handAmount.Value = hand.Count;
-    }
-
-    public string GetName()
-    {
-        if (SteamClient.IsValid)
-        {
-            return steamName.Value.ToString();
-        }
-        else
-        {
-            return $"Seat {profile.SeatId.Value}";
-        }
-    }
-
-    [Rpc(SendTo.Owner)]
-    public void PlayNoChicagoSoundRpc()
-    {
-        if (PlayerSound.instance != null)
-        {
-            PlayerSound.instance.PlayNoChicago();
-        }
-    }
-
-    [Rpc(SendTo.Owner)]
-    public void PlayWinChicagoSoundRpc()
-    {
-        if (PlayerSound.instance != null)
-        {
-            PlayerSound.instance.PlayWinChicago();
-        }
-    }
-
-    [Rpc(SendTo.Owner)]
-    public void PlayLoseChicagoSoundRpc()
-    {
-        if (PlayerSound.instance != null)
-        {
-            PlayerSound.instance.PlayLoseChicago();
-        }
     }
 }

@@ -11,3 +11,12 @@ public enum Hands
     Pair,
     Nothing
 }
+
+public static class PokerHelper
+{
+    public static string HandName(Hands hand)
+    {
+        string handName = hand.ToString().Replace("_", " ");
+        return handName;
+    }
+}
