@@ -434,7 +434,7 @@ public class GameManager : NetworkBehaviour
             HandDetector Hand = new(players[i].GetHand());
             Hands playerHand = Hand.CheckHand();
 
-            if (playerHand < highestHand)
+            if (playerHand > highestHand)
             {
                 highestHand = playerHand;
                 currentWinner = players[i];
@@ -445,8 +445,8 @@ public class GameManager : NetworkBehaviour
         if (currentWinner)
         {
             print("Try send explosive text");
-
-            yield return StartCoroutine(ShowAnnouncementText($"{currentWinner.profile.GetName()} has the highest {PokerHelper.HandName(highestHand)} and gets {GameRules.handPoints[highestHand]} points.", 3f));
+            //yield return StartCoroutine(ShowAnnouncementText($"{currentWinner.profile.GetName()} has the highest {PokerHelper.HandName(highestHand)} and gets {GameRules.handPoints[highestHand]} points.", 3f));
+            yield return StartCoroutine(ShowScoreText((int)highestHand, currentWinner, 3f));
 
             currentWinner.points.Value += GameRules.handPoints[highestHand];
         }
@@ -464,7 +464,7 @@ public class GameManager : NetworkBehaviour
             HandDetector Hand = new(players[i].GetHand());
             Hands playerHand = Hand.CheckHand();
 
-            if (playerHand < highestHand)
+            if (playerHand > highestHand)
             {
                 highestHand = playerHand;
                 currentWinner = players[i];
@@ -610,7 +610,7 @@ public class GameManager : NetworkBehaviour
 
             foreach (var item in players)
             {
-                item.GetComponentInChildren<PlayerUI>().HideTextRpc();
+                item.GetComponentInChildren<PlayerUI>().HideAnnouncementTextRpc();
             }
 
             yield return new WaitForSeconds(0.2f);
@@ -631,10 +631,28 @@ public class GameManager : NetworkBehaviour
 
         foreach (var item in players)
         {
-            item.GetComponentInChildren<PlayerUI>().HideTextRpc();
+            item.GetComponentInChildren<PlayerUI>().HideAnnouncementTextRpc();
         }
         yield return new WaitForSeconds(1f);
     }
+
+    IEnumerator ShowScoreText(int hand, PlayerScript player, float duration)
+    {
+
+        foreach (var item in players)
+        {
+            item.GetComponentInChildren<PlayerUI>().ScoreTextRpc(hand, player.NetworkObject);
+        }
+
+        yield return new WaitForSeconds(duration);
+
+        foreach (var item in players)
+        {
+            item.GetComponentInChildren<PlayerUI>().HideScoreTextRpc();
+        }
+        yield return new WaitForSeconds(1f);
+    }
+
     private bool AllPlayersBelowMaxScore(int maxScore = 51)
     {
         foreach (var player in players)

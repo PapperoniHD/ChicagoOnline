@@ -49,9 +49,6 @@ public class TextAnimator : MonoBehaviour
 
             Vector3[] vertices = textInfo.meshInfo[materialIndex].vertices;
 
-            // Use the original position
-            Vector3 offset = originalVertices[materialIndex][vertexIndex];
-
             float waveOffset = Mathf.Sin(time + i * waveFrequency) * waveHeight;
 
             for (int j = 0; j < 4; j++)
@@ -61,7 +58,6 @@ public class TextAnimator : MonoBehaviour
             }
         }
 
-        // Push the modified vertex data to the mesh
         for (int i = 0; i < textInfo.meshInfo.Length; i++)
         {
             TMP_MeshInfo meshInfo = textInfo.meshInfo[i];

@@ -4,14 +4,30 @@ using System.Collections.Generic;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class PlayerUI : NetworkBehaviour
 {
+    [Header("References")]
     public Camera playerCamera;
     public PlayerScript playerScript;
 
+    [Header("Buttons")]
+    public Button discardCardButton;
+    public Button sortButton;
+    public Button endTurnButton;
+    public Button startButton;
+
+    [Header("Cards")]
+    public GameObject cardPrefab;
+    public RectTransform cardPos;
+
+    [Header("Text")]
     [SerializeField] private TextMeshProUGUI currentTurnText;
     [SerializeField] private TextMeshProUGUI explosiveText;
+    [SerializeField] private TextMeshProUGUI scoreText;
+    [SerializeField] private RawImage scoreProfilePicture;
+    [SerializeField] private TextMeshProUGUI scoreProfileName;
 
     [SerializeField] private GameObject canvas;
     [SerializeField] private Transform scoreboard;
@@ -21,6 +37,9 @@ public class PlayerUI : NetworkBehaviour
     [SerializeField] private GameObject dealerButtonUI;
     [SerializeField] private GameObject chicagoPromptUI;
     [SerializeField] private GameObject waitingUI;
+
+
+
     public GameObject yourTurnUI;
     public GameObject chooseCardsUI;
 
@@ -44,7 +63,27 @@ public class PlayerUI : NetworkBehaviour
             canvas.gameObject.SetActive(false);
             playerCamera.enabled = false;
         }
-        
+        SetupButtons();
+
+    }
+
+    private void SetupButtons()
+    {
+        if (!IsLocalPlayer) return;
+
+        discardCardButton.onClick.AddListener(playerScript.DiscardCards);
+        sortButton.onClick.AddListener(playerScript.Check);
+        endTurnButton.onClick.AddListener(playerScript.EndTurn);
+
+        discardCardButton.gameObject.SetActive(false);
+        endTurnButton.gameObject.SetActive(false);
+
+
+        if (IsServer)
+        {
+            startButton.gameObject.SetActive(true);
+            startButton.onClick.AddListener(playerScript.StartGame);
+        }
     }
 
     [Rpc(SendTo.Owner)]
@@ -106,7 +145,36 @@ public class PlayerUI : NetworkBehaviour
     }
 
     [Rpc(SendTo.Owner)]
-    public void HideTextRpc()
+    public void ScoreTextRpc(int hand, NetworkObjectReference Player)
+    {
+        
+        if (Player.TryGet(out NetworkObject netObj))
+        {
+            PlayerProfile profile = netObj.GetComponent<PlayerProfile>();
+            if (profile == null)
+            {
+                Debug.LogError("[PlayerUI] PlayerProfile not found!");
+                return;
+            }
+
+            waitingUI.SetActive(false);
+            scoreText.SetText($"{PokerHelper.HandName((Hands)hand)} +{GameRules.handPoints[(Hands)hand]}");
+
+            scoreProfilePicture.texture = profile.GetProfilePicture();
+            scoreProfileName.text = profile.GetName();
+
+            scoreText.GetComponent<Animator>().Play("ShowText", -1, 0f);
+        }
+    }
+
+    [Rpc(SendTo.Owner)]
+    public void HideScoreTextRpc()
+    {
+        scoreText.GetComponent<Animator>().Play("HideText", -1, 0f);
+    }
+
+    [Rpc(SendTo.Owner)]
+    public void HideAnnouncementTextRpc()
     {
         explosiveText.GetComponent<Animator>().Play("HideText", -1, 0f);
     }

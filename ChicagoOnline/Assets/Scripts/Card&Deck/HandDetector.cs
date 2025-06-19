@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
+// Source: https://stackoverflow.com/questions/39637965/c-sharp-check-for-a-poker-straight
 public class HandDetector : MonoBehaviour
 {
     List<Card> hand;

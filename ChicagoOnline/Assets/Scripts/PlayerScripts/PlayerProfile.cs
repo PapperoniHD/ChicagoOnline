@@ -12,6 +12,7 @@ public class PlayerProfile : NetworkBehaviour
     // For steam
     public NetworkVariable<ulong> steamId = new(writePerm: NetworkVariableWritePermission.Server);
     public NetworkVariable<FixedString128Bytes> steamName = new(writePerm: NetworkVariableWritePermission.Server);
+    public Texture2D profilePicture; 
 
     // Events for registry
     public static event Action<PlayerProfile> OnProfileSpawned;
@@ -42,6 +43,7 @@ public class PlayerProfile : NetworkBehaviour
         if (!IsOwner)
         {
             seatsCanvas.SetActive(false);
+            
         }
         else
         {
@@ -83,7 +85,6 @@ public class PlayerProfile : NetworkBehaviour
         GameUI.Instance.OnPlayerJoined += TryAddUI;
         GameUI.Instance.OnPlayerLeft += TryRemoveUI;
 
-        // Seed UI for existing players
         StartCoroutine(DelayedUIInit());
     }
 
@@ -243,6 +244,37 @@ public class PlayerProfile : NetworkBehaviour
         {
             return $"Seat {SeatId.Value}";
         }
+    }
+
+
+    async void SetSteamProfilePicture()
+    {
+        var img = await SteamFriends.GetLargeAvatarAsync(steamId.Value);
+        if (img.HasValue)
+        {
+            profilePicture = SteamHelper.GetTextureFromImage(img.Value);
+        }
+    }
+
+    public Texture2D GetProfilePicture()
+    {
+        if (SteamClient.IsValid)
+        {
+            if (profilePicture != null)
+            {
+                return profilePicture;
+            }
+            else
+            {
+                SetSteamProfilePicture();
+                return profilePicture;
+            }
+        }
+        else
+        {
+            return null;
+        }
+        
     }
 
 }

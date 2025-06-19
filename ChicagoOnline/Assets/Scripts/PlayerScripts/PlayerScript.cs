@@ -19,14 +19,6 @@ public class PlayerScript : NetworkBehaviour
     public PlayerProfile profile;
     public PlayerUI UI;
 
-    [Header("UI")]
-    [SerializeField] private Button discardCardButton;
-    [SerializeField] private Button sortButton;
-    [SerializeField] private Button endTurnButton;
-    [SerializeField] private Button startButton;
-    [SerializeField] private GameObject cardPrefab;
-    [SerializeField] private RectTransform cardPos;
-
     [Header("Card Data")]
     [SerializeField]
     private List<Card> hand;
@@ -47,28 +39,7 @@ public class PlayerScript : NetworkBehaviour
 
     private void Start()
     {
-        SetupButtons();
-    }
-
-    private void SetupButtons()
-    {
-        if (!IsLocalPlayer) return;
-
-        discardCardButton.onClick.AddListener(DiscardCards);
-        sortButton.onClick.AddListener(Check);
-        endTurnButton.onClick.AddListener(EndTurn);
-
-        discardCardButton.gameObject.SetActive(false);
-        endTurnButton.gameObject.SetActive(false);
-
         myTurn.OnValueChanged += SetActiveTurnRpc;
-
-
-        if (IsServer)
-        {
-            startButton.gameObject.SetActive(true);
-            startButton.onClick.AddListener(StartGame);
-        }
     }
 
     private void AddCardToMiddle()
@@ -85,17 +56,17 @@ public class PlayerScript : NetworkBehaviour
         DiscardCards();
         EndTurnRpc();
         UpdateCardAmountForUI();
-        endTurnButton.gameObject.SetActive(false);
+        UI.endTurnButton.gameObject.SetActive(false);
         
     }
 
-    void StartGame()
+    public void StartGame()
     {
-        startButton.gameObject.SetActive(false);
+        UI.startButton.gameObject.SetActive(false);
         GameManager.GM.StartGameRpc();
     }
 
-    void Check()
+    public void Check()
     {
         HandDetector sortedHand = new(hand);
 
@@ -110,24 +81,24 @@ public class PlayerScript : NetworkBehaviour
         if (newValue && roundType == RoundType.DiscardingCards)
         {
             UI.WaitingForChicagoUIRpc(false);
-            endTurnButton.gameObject.SetActive(true);
-            endTurnButton.GetComponentInChildren<TextMeshProUGUI>().SetText("Done");
+            UI.endTurnButton.gameObject.SetActive(true);
+            UI.endTurnButton.GetComponentInChildren<TextMeshProUGUI>().SetText("Done");
             UI.chooseCardsUI.SetActive(true);
         }
         else if(newValue && roundType == RoundType.Game)
         {
             UI.WaitingForChicagoUIRpc(false);
-            endTurnButton.gameObject.SetActive(true);
-            endTurnButton.GetComponentInChildren<TextMeshProUGUI>().SetText("Play Card");
+            UI.endTurnButton.gameObject.SetActive(true);
+            UI.endTurnButton.GetComponentInChildren<TextMeshProUGUI>().SetText("Play Card");
             UI.yourTurnUI.SetActive(true);
 
         }
         else
         {
-            endTurnButton.gameObject.SetActive(false);
+            UI.endTurnButton.gameObject.SetActive(false);
         }
     }
-    void EndTurn()
+    public void EndTurn()
     {
         if (AudioManager.instance != null)
         {
@@ -143,8 +114,8 @@ public class PlayerScript : NetworkBehaviour
         }
         else
         {
-            
-            endTurnButton.gameObject.SetActive(false);
+
+            UI.endTurnButton.gameObject.SetActive(false);
             UI.chooseCardsUI.SetActive(false);
             DiscardCards();
             EndTurnRpc();
@@ -207,12 +178,12 @@ public class PlayerScript : NetworkBehaviour
 
     void UpdateCardUI(Card card, int index)
     {
-        GameObject cardUI = Instantiate(cardPrefab, GetComponentInChildren<Canvas>().transform);
-        cardUI.transform.parent = cardPos.transform;
+        GameObject cardUI = Instantiate(UI.cardPrefab, GetComponentInChildren<Canvas>().transform);
+        cardUI.transform.parent = UI.cardPos.transform;
 
         RectTransform rectTransform = cardUI.GetComponent<RectTransform>();
 
-        rectTransform.position = cardPos.position;
+        rectTransform.position = UI.cardPos.position;
 
         cardUI.GetComponent<RawImage>().texture = Resources.Load<Texture2D>("MyCards/Cards/" + card.FileName());
         cardUI.GetComponent<CardUI>().playerScript = this;
@@ -269,7 +240,7 @@ public class PlayerScript : NetworkBehaviour
         }
     }
 
-    void DiscardCards()
+    public void DiscardCards()
     {
         if (IsServer)
         {
@@ -370,7 +341,7 @@ public class PlayerScript : NetworkBehaviour
         {
             if (selectedCards.Count > 0)
             {
-                endTurnButton.GetComponentInChildren<TextMeshProUGUI>().SetText("Discard");
+                UI.endTurnButton.GetComponentInChildren<TextMeshProUGUI>().SetText("Discard");
             }
         }
     }
@@ -383,7 +354,7 @@ public class PlayerScript : NetworkBehaviour
 
         if (roundType == RoundType.DiscardingCards && selectedCards.Count <= 0)
         {
-            endTurnButton.GetComponentInChildren<TextMeshProUGUI>().SetText("Done");
+            UI.endTurnButton.GetComponentInChildren<TextMeshProUGUI>().SetText("Done");
         }
     }
 
