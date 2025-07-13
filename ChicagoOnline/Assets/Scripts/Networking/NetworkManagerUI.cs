@@ -10,6 +10,8 @@ public class NetworkManagerUI : MonoBehaviour
     [SerializeField] private Button hostBtn;
     [SerializeField] private Button clientBtn;
     [SerializeField] private Button steamBtn;
+    [SerializeField] private Button quit;
+    [SerializeField] private Camera menuCamera;
 
     private void Awake()
     {
@@ -18,6 +20,8 @@ public class NetworkManagerUI : MonoBehaviour
             NetworkManager.Singleton.StartHost();
             hostBtn.gameObject.SetActive(false);
             clientBtn.gameObject.SetActive(false);
+            RemoveButtons();
+
         });
 
         clientBtn.onClick.AddListener(() =>
@@ -25,6 +29,12 @@ public class NetworkManagerUI : MonoBehaviour
             NetworkManager.Singleton.StartClient();
             hostBtn.gameObject.SetActive(false);
             clientBtn.gameObject.SetActive(false);
+            RemoveButtons();
+        });
+
+        quit.onClick.AddListener(() =>
+        {
+            Application.Quit();
         });
     }
 
@@ -50,6 +60,13 @@ public class NetworkManagerUI : MonoBehaviour
         hostBtn.gameObject.SetActive(false);
         clientBtn.gameObject.SetActive(false);
         steamBtn.gameObject.SetActive(false);
+        this.transform.parent.gameObject.SetActive(false);
+
+        if (menuCamera != null)
+        {
+            Destroy(menuCamera.gameObject);
+        }
+        
     }
 
     private void OnDestroy()

@@ -11,6 +11,7 @@ using Netcode.Transports.Facepunch;
 
 public class SteamManager : MonoBehaviour
 {
+
     private void OnEnable()
     {
         SteamMatchmaking.OnLobbyCreated += LobbyCreated;
@@ -23,6 +24,7 @@ public class SteamManager : MonoBehaviour
         SteamMatchmaking.OnLobbyEntered -= LobbyEntered;
         SteamFriends.OnGameLobbyJoinRequested -= GameLobbyJoinRequested;
     }
+
 
     private async void GameLobbyJoinRequested(Lobby lobby, SteamId SteamID)
     {

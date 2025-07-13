@@ -17,6 +17,7 @@ public class PlayerUI : NetworkBehaviour
     public Button sortButton;
     public Button endTurnButton;
     public Button startButton;
+    public Button inviteButton;
 
     [Header("Cards")]
     public GameObject cardPrefab;
@@ -82,6 +83,8 @@ public class PlayerUI : NetworkBehaviour
         if (IsServer)
         {
             startButton.gameObject.SetActive(true);
+            inviteButton.gameObject.SetActive(true);
+            inviteButton.onClick.AddListener(playerScript.InviteFriends);
             startButton.onClick.AddListener(playerScript.StartGame);
         }
     }
@@ -179,4 +182,5 @@ public class PlayerUI : NetworkBehaviour
         explosiveText.GetComponent<Animator>().Play("HideText", -1, 0f);
     }
 
+   
 }

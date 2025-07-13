@@ -63,6 +63,7 @@ public class PlayerScript : NetworkBehaviour
     public void StartGame()
     {
         UI.startButton.gameObject.SetActive(false);
+        UI.inviteButton.gameObject.SetActive(false);
         GameManager.GM.StartGameRpc();
     }
 
@@ -386,4 +387,13 @@ public class PlayerScript : NetworkBehaviour
     {
         handAmount.Value = hand.Count;
     }
+
+    public void InviteFriends()
+    {
+        if (SteamClient.IsValid)
+        {
+            SteamFriends.OpenGameInviteOverlay(LobbySaver.instance.currentlobby.Id);
+        }
+    }
+
 }
