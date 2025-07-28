@@ -434,7 +434,7 @@ public class GameManager : NetworkBehaviour
             HandDetector Hand = new(players[i].GetHand());
             Hands playerHand = Hand.CheckHand();
 
-            if (playerHand > highestHand)
+            if (playerHand < highestHand)
             {
                 highestHand = playerHand;
                 currentWinner = players[i];
@@ -464,7 +464,7 @@ public class GameManager : NetworkBehaviour
             HandDetector Hand = new(players[i].GetHand());
             Hands playerHand = Hand.CheckHand();
 
-            if (playerHand > highestHand)
+            if (playerHand < highestHand)
             {
                 highestHand = playerHand;
                 currentWinner = players[i];
